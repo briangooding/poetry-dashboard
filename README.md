@@ -26,6 +26,15 @@ Signing in to supabase.com with Google is a separate login. This page uses the p
 
 Email links only work when the page is opened from its web address, not as a file on your computer.
 
+## Inspiration map
+
+`inspiration.html` maps poems by originality, creativity and fluidity. It opens at `https://<your-username>.github.io/poetry-dashboard/inspiration.html` and uses the same sign-in as the statistics page; if you are already signed in there, it opens straight away.
+
+- It loads every poem's text from `public.poems` (row-level security applies as above) and scores them in the browser each time it loads. Nothing is written back to the database.
+- Each poem is scored only up to its last `---` line, so the date, place and notes after it don't count. Poems under 30 words or 4 lines are left out.
+- Scores are percentiles within your own poems (50 = your average). Originality is how rare the words are across your archive, creativity is how few words repeat in the first 60, and fluidity is how often a line break falls mid-phrase.
+- The page contains no poem data itself; titles, tags and scores appear only after signing in.
+
 ## Notes
 
 - Data refreshes each time the page loads; use **Refresh** to reload without signing in again. Your session is remembered in the browser until you click **Sign out**.
