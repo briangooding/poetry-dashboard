@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Poetry statistics</title>
+<style>
+:root {
+  --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-anthropic-serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --color-bg: #f7f6f2; --color-panel: #ffffff; --color-fg: #1f1e1b; --color-fg-muted: #6b6860;
+  --color-border-line: #e3e0d8; --color-bad: #c0392b; --cds-border: #d9d5cc;
+  --cds-chart-axis: #c9c5bb; --cds-chart-grid: #ebe8e1; --cds-chart-muted: #c4c0b6;
+  --cds-surface-popover: #ffffff; --cds-text-secondary: #6b6860; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12);
+  --skel: #ece9e2;
+  --cds-font-size-caption: 12px; --cds-font-size-body: 14px; --cds-font-size-heading: 16px; --cds-font-size-title: 28px;
+  --cds-font-weight-medium: 600;
+  --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 16px; --cds-gap-xl: 32px;
+  --cds-pad-xs: 6px; --cds-pad-sm: 10px; --cds-pad-md: 14px; --cds-pad-lg: 20px;
+  --cds-radius: 10px; --cds-dur-slow: .4s;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1b1a18; --color-panel: #24231f; --color-fg: #ecebe6; --color-fg-muted: #a39f95;
+    --color-border-line: #36342f; --cds-border: #3d3b35; --cds-chart-axis: #4a4741; --cds-chart-grid: #2f2d29;
+    --cds-chart-muted: #5a5750; --cds-surface-popover: #2c2b27; --cds-text-secondary: #a39f95; --skel: #2f2d29;
+    --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.5); color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+.dash-skeleton { color: transparent !important; background: var(--skel); border-radius: 6px; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .55; } }
+.topbar { display: flex; justify-content: flex-end; align-items: center; gap: 12px; font-size: 12px; color: var(--color-fg-muted); margin-bottom: 8px; flex-wrap: wrap; }
+.btn { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); cursor: pointer; }
+.btn.primary { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
+.btn:disabled { opacity: .6; cursor: default; }
+#auth { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+#auth form { width: 100%; max-width: 340px; background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+#auth h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 26px; margin: 0 0 4px; }
+#auth p { margin: 0 0 8px; font-size: 13px; color: var(--color-fg-muted); line-height: 1.45; }
+#auth label { font-size: 12px; color: var(--color-fg-muted); display: flex; flex-direction: column; gap: 4px; }
+#auth input { font: inherit; font-size: 15px; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--color-border-line); background: var(--color-bg); color: var(--color-fg); }
+#auth .err { color: var(--color-bad); font-size: 13px; min-height: 1em; }
+#auth .ok { color: var(--color-fg); font-size: 13px; line-height: 1.45; }
+#auth .alt { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+#auth .linkbtn { all: unset; cursor: pointer; font-size: 13px; color: var(--color-fg-muted); text-decoration: underline; text-underline-offset: 3px; }
+#auth .linkbtn:hover, #auth .linkbtn:focus-visible { color: var(--color-fg); }
+.load-err { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 10px; padding: 16px; color: var(--color-bad); margin-bottom: 16px; }
+[hidden] { display: none !important; }
+
+
+.pz { font-family: var(--font-anthropic-sans); color: var(--color-fg); display: flex; flex-direction: column; gap: var(--cds-gap-md); }
+.pz-head h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-xs); }
+.pz-take { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); margin: 0; line-height: 1.5; }
+.pz-take b, .pz .pz-take b { font-weight: 500; color: var(--color-fg); }
+.pz-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: var(--cds-gap-md); }
+.pz-kpi { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md) var(--cds-pad-lg); }
+.pz-kpi .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.pz-kpi .val { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; margin-top: var(--cds-gap-xs); }
+.pz-kpi .sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-xs); }
+.pz-sec h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-sm); }
+.pz-sec { margin: 0; }
+.pz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); }
+.pz-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+.pz-card.wide { grid-column: 1 / -1; }
+.pz-card h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.pz-card .note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-xs) 0 var(--cds-gap-md); line-height: 1.45; }
+.pz-chart { position: relative; min-height: 220px; }
+.pz-chart svg { display: block; overflow: visible; }
+.pz-chart text { font-size: var(--cds-font-size-caption); fill: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+.pz-chart text.lab { fill: var(--color-fg); }
+.pz-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; opacity: 0; z-index: 2; }
+.pz-tip .k { color: var(--cds-text-secondary); }
+.pz-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: var(--cds-gap-sm); }
+.pz-legend span::before { content: ""; display: inline-block; width: .6rem; height: .6rem; border-radius: 2px; margin-right: .35rem; background: var(--sw); vertical-align: -1px; }
+.pz-ramp { display: flex; align-items: center; gap: .4rem; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: var(--cds-gap-sm); }
+.pz-ramp i { display: inline-block; width: 1.1rem; height: .6rem; border-radius: 2px; }
+.pz-tools { display: flex; gap: var(--cds-gap-sm); align-items: center; margin-bottom: var(--cds-gap-sm); flex-wrap: wrap; }
+.pz-tools input { font: inherit; font-size: var(--cds-font-size-body); padding: var(--cds-pad-xs) var(--cds-pad-sm); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-bg); color: var(--color-fg); min-width: 0; flex: 1 1 14rem; }
+.pz-tools .cnt { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.pz-tablebox { max-height: 220px; overflow: auto; border-top: 1px solid var(--color-border-line); min-height: 60px; }
+.pz-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); font-variant-numeric: tabular-nums; }
+.pz-table th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); border-bottom: 1px solid var(--color-border-line); padding: 0; z-index: 1; }
+.pz-table th button { all: unset; cursor: pointer; display: block; width: 100%; padding: var(--cds-pad-xs) var(--cds-pad-sm); box-sizing: border-box; }
+.pz-table th[aria-sort=ascending] button::after { content: " ↑"; color: var(--color-fg-muted); }
+.pz-table th[aria-sort=descending] button::after { content: " ↓"; color: var(--color-fg-muted); }
+.pz-table td { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+.pz-table td.muted { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+@media (max-width: 560px) { .pz-table .hide-narrow { display: none; } }
+.pz-fail { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: inherit; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.pz-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+.pz [data-dash-source-state=empty] { color: transparent; }
+.pz [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+.pz-card.latest { background: color-mix(in srgb, var(--color-fg) 6%, var(--color-panel)); display: flex; flex-direction: column; }
+.pz-latest-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-heading); margin: var(--cds-gap-sm) 0 var(--cds-gap-xs); }
+.pz-latest-meta { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); line-height: 1.45; }
+.pz-latest-body { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-body); line-height: 1.55; white-space: pre-wrap; margin: 0; max-height: 360px; overflow: auto; min-height: 120px; }
+.pz-latest-tags { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-md); }
+.pz-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 760px) { .pz-grid.two { grid-template-columns: 1fr; } }
+.pz-link { color: inherit; text-decoration: underline; text-decoration-color: var(--color-border-line); text-underline-offset: 3px; cursor: pointer; }
+.pz-link:hover, .pz-link:focus-visible { text-decoration-color: currentColor; }
+.pz-modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px; background: rgba(0,0,0,.35); overflow: auto; }
+.pz-modal[hidden] { display: none; }
+.pz-modal-box { position: relative; width: 100%; max-width: 560px; background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); box-shadow: var(--cds-shadow-popover); }
+.pz-modal-box .pz-latest-body { max-height: none; overflow: visible; }
+.pz-modal-close { position: absolute; top: 10px; right: 10px; font: inherit; font-size: 18px; line-height: 1; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); cursor: pointer; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head>
+<body>
+<div id="auth" hidden>
+  <form id="login" autocomplete="on">
+    <h1>Poetry statistics</h1>
+    <p>Sign in with your Supabase account for the poetry project.</p>
+    <label>Email<input id="email" type="email" autocomplete="username" required></label>
+    <label>Password<input id="password" type="password" autocomplete="current-password"></label>
+    <div class="err" id="login-err" role="alert"></div>
+    <div class="ok" id="login-ok" role="status"></div>
+    <button class="btn primary" id="login-btn" type="submit">Sign in</button>
+    <div class="alt"><button type="button" class="linkbtn" id="magic-btn">Email me a sign-in link</button><button type="button" class="linkbtn" id="forgot-btn">Forgot password?</button></div>
+  </form>
+  <form id="reset" hidden>
+    <h1>Set a new password</h1>
+    <p>Choose a password for this dashboard. You'll use it with your email next time.</p>
+    <label>New password<input id="new-password" type="password" autocomplete="new-password" minlength="8" required></label>
+    <div class="err" id="reset-err" role="alert"></div>
+    <button class="btn primary" id="reset-btn" type="submit">Save password and open dashboard</button>
+  </form>
+</div>
+<div id="app" hidden>
+  <div class="wrap">
+    <div class="topbar"><span id="stamp"></span><span id="who"></span><button class="btn" id="refresh" type="button">Refresh</button><button class="btn" id="logout" type="button">Sign out</button></div>
+    <div class="load-err" id="load-err" hidden></div>
+
+
+<div class="pz">
+  <header class="pz-head" id="top">
+    <h1>Poetry statistics</h1>
+    <p class="pz-take" id="takeaway">Writing peaked in <b data-source="highlights" data-field="peak_year" class="dash-skeleton">—</b> with <b data-source="highlights" data-field="peak_poems" class="dash-skeleton">—</b> poems, most often around <b data-source="highlights" data-field="peak_hour" class="dash-skeleton">—</b>; most were written in <b data-source="highlights" data-field="top_country" class="dash-skeleton">—</b>, and the most-tagged theme is <b data-source="highlights" data-field="top_theme" class="dash-skeleton">—</b> (<span data-source="highlights" data-field="top_theme_poems" class="dash-skeleton">—</span> poems).</p>
+  </header>
+
+  <div class="pz-kpis">
+    <div class="pz-kpi"><div class="lbl">Poems in the archive</div><div class="val dash-skeleton" data-source="summary" data-field="poems" data-row="0">—</div><div class="sub"><span data-source="summary" data-field="dated" data-row="0">—</span> with a written date</div></div>
+    <div class="pz-kpi"><div class="lbl">Years writing</div><div class="val"><span class="dash-skeleton" data-source="summary" data-field="first_year" data-row="0">—</span>–<span class="dash-skeleton" data-source="summary" data-field="last_year" data-row="0">—</span></div><div class="sub"><span data-source="summary" data-field="timed" data-row="0">—</span> with a time of day</div></div>
+    <div class="pz-kpi"><div class="lbl">Words written</div><div class="val dash-skeleton" data-source="summary" data-field="words" data-row="0">—</div><div class="sub">Across all poems</div></div>
+    <div class="pz-kpi"><div class="lbl">Average poem</div><div class="val"><span class="dash-skeleton" data-source="summary" data-field="avg_words" data-row="0">—</span> words</div><div class="sub"><span data-source="summary" data-field="avg_lines" data-row="0">—</span> lines on average</div></div>
+  </div>
+
+  <section class="pz-sec" id="recent">
+    <div class="pz-grid two">
+      <div class="pz-card latest" id="card-latest">
+        <h3>Most recent poem</h3>
+        <div id="latest" data-source="latest">
+          <div class="pz-latest-title" id="latest-title"></div>
+          <p class="pz-latest-meta" id="latest-meta"></p>
+          <p class="pz-latest-body" id="latest-body"></p>
+          <div class="pz-latest-tags" id="latest-tags"></div>
+        </div>
+      </div>
+      <div class="pz-card latest" id="card-updated">
+        <h3>Most recently updated poem</h3>
+        <div id="updated" data-source="updated">
+          <div class="pz-latest-title" id="updated-title"></div>
+          <p class="pz-latest-meta" id="updated-meta"></p>
+          <p class="pz-latest-body" id="updated-body"></p>
+          <div class="pz-latest-tags" id="updated-tags"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pz-sec" id="appendix">
+    <h2>Appendix A: poems without a location<span id="unloc-total"></span></h2>
+    <div class="pz-card" id="card-unlocated">
+      <p class="note" style="margin-top:0">Every poem counted as Unknown in "Where poems were written": <b data-source="unlocated_counts" data-field="poems" data-where="reason=No%20location%20line">—</b> have no location line under the date, and <b data-source="unlocated_counts" data-field="poems" data-where="reason=Location%20not%20recognized">—</b> have one that doesn't name a place I could match to a country.</p>
+      <div class="pz-tools"><input type="search" id="unloc-q" placeholder="Search titles, dates or notebooks" aria-label="Search poems without a location"><span class="cnt" id="unloc-cnt"></span></div>
+      <div class="pz-tablebox">
+        <table class="pz-table" id="tbl-unlocated" data-source="unlocated" data-row-key="id">
+          <thead><tr>
+            <th data-field="title"><button type="button" data-k="title">Title</button></th>
+            <th data-field="written"><button type="button" data-k="written">Written</button></th>
+            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+            <th data-field="reason"><button type="button" data-k="reason">Why unknown</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="pz-sec" id="when">
+    <div class="pz-grid two">
+      <div class="pz-card wide" id="card-years">
+        <h3>Poems per year</h3>
+        <p class="note">By the poem's written date. 2019–2021 were the most prolific stretch.</p>
+        <div class="pz-chart" id="ch-years" data-source="by_year"></div>
+      </div>
+      <div class="pz-card" id="card-heat">
+        <h3>Month and weekday</h3>
+        <p class="note">Poems by calendar month and day of the week, all years combined, from the date in each poem's title.</p>
+        <div class="pz-ramp" data-ramp="0"></div>
+        <div class="pz-chart" id="ch-heat" data-source="month_weekday"></div>
+      </div>
+      <div class="pz-card" id="card-hours">
+        <h3>Time of day</h3>
+        <p class="note">Poems by the hour in the title's timestamp (for example "10.09.14 1415"), local time where written.</p>
+        <div class="pz-chart" id="ch-hours" data-source="hours"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pz-sec" id="where">
+    <div class="pz-grid two">
+      <div class="pz-card" id="card-countries">
+        <h3>Where poems were written</h3>
+        <p class="note">From the location line under each poem (e.g. "… / Ten Coffee, Saigon"), or the notebook's country when that line is missing. Unknown means neither says.</p>
+        <div class="pz-chart" id="ch-countries" data-source="countries"></div>
+      </div>
+      <div class="pz-card" id="card-places">
+        <h3>Places mentioned in tags</h3>
+        <p class="note">Top 15 place-name tags. A tag means the poem is about or mentions a place, not that it was written there.</p>
+        <div class="pz-legend" id="lg-places"></div>
+        <div class="pz-chart" id="ch-places" data-source="place_tags"></div>
+      </div>
+      <div class="pz-card wide" id="card-country-years">
+        <h3>Where written, by year</h3>
+        <p class="note">Poems written in each country per year of the title date. Poems with an unknown location are left out.</p>
+        <div class="pz-ramp" data-ramp="1"></div>
+        <div class="pz-chart" id="ch-country-years" data-source="country_years"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pz-sec" id="themes">
+    <div class="pz-grid">
+      <div class="pz-card wide" id="card-themes">
+        <h3>Top themes</h3>
+        <p class="note">Poems carrying each tag, grouped into five families. People's names, places and filing tags are left out.</p>
+        <div class="pz-legend" id="lg-themes"></div>
+        <div class="pz-chart" id="ch-themes" data-source="themes"></div>
+      </div>
+      <div class="pz-card wide" id="card-theme-eras">
+        <h3>Themes over time</h3>
+        <p class="note">Share of each period's dated poems that carry the tag, for the 16 most common themes. </p>
+        <div class="pz-ramp" data-ramp="0" data-lo="smaller share" data-hi="larger share"></div>
+        <div class="pz-chart" id="ch-theme-eras" data-source="theme_eras"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pz-sec" id="appendix-revisit">
+    <h2>Appendix B: poems tagged "revisit"<span id="rev-total"></span></h2>
+    <div class="pz-card" id="card-revisit">
+      <p class="note" style="margin-top:0">Every poem tagged "revisit", by the date in its title.</p>
+      <div class="pz-tools"><input type="search" id="rev-q" placeholder="Search titles, dates, places or notebooks" aria-label="Search poems to revisit"><span class="cnt" id="rev-cnt"></span></div>
+      <div class="pz-tablebox">
+        <table class="pz-table" id="tbl-revisit" data-source="revisit" data-row-key="id">
+          <thead><tr>
+            <th data-field="title"><button type="button" data-k="title">Title</button></th>
+            <th data-field="written"><button type="button" data-k="written">Written</button></th>
+            <th data-field="location"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="pz-sec" id="appendix-brief">
+    <h2>Appendix C: poems tagged "brief"<span id="brf-total"></span></h2>
+    <div class="pz-card" id="card-brief">
+      <p class="note" style="margin-top:0">Every poem tagged "brief", by the date in its title.</p>
+      <div class="pz-tools"><input type="search" id="brf-q" placeholder="Search titles, dates, places or notebooks" aria-label="Search brief poems"><span class="cnt" id="brf-cnt"></span></div>
+      <div class="pz-tablebox">
+        <table class="pz-table" id="tbl-brief" data-source="brief" data-row-key="id">
+          <thead><tr>
+            <th data-field="title"><button type="button" data-k="title">Title</button></th>
+            <th data-field="written"><button type="button" data-k="written">Written</button></th>
+            <th data-field="location"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="pz-sec" id="appendix-collection">
+    <h2>Appendix D: poems tagged "collection"<span id="coll-total"></span></h2>
+    <div class="pz-card" id="card-collection">
+      <p class="note" style="margin-top:0">Every poem tagged "collection", by the date in its title.</p>
+      <div class="pz-tools"><input type="search" id="coll-q" placeholder="Search titles, dates, places or notebooks" aria-label="Search poems tagged "collection""><span class="cnt" id="coll-cnt"></span></div>
+      <div class="pz-tablebox">
+        <table class="pz-table" id="tbl-collection" data-source="collection" data-row-key="id">
+          <thead><tr>
+            <th data-field="title"><button type="button" data-k="title">Title</button></th>
+            <th data-field="written"><button type="button" data-k="written">Written</button></th>
+            <th data-field="location"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="pz-sec" id="appendix-unfinished">
+    <h2>Appendix E: poems tagged "not-finished"<span id="unf-total"></span></h2>
+    <div class="pz-card" id="card-unfinished">
+      <p class="note" style="margin-top:0">Every poem tagged "not-finished", by the date in its title.</p>
+      <div class="pz-tools"><input type="search" id="unf-q" placeholder="Search titles, dates, places or notebooks" aria-label="Search poems tagged "not-finished""><span class="cnt" id="unf-cnt"></span></div>
+      <div class="pz-tablebox">
+        <table class="pz-table" id="tbl-unfinished" data-source="unfinished" data-row-key="id">
+          <thead><tr>
+            <th data-field="title"><button type="button" data-k="title">Title</button></th>
+            <th data-field="written"><button type="button" data-k="written">Written</button></th>
+            <th data-field="location"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="pz-sec" id="appendix-poets">
+    <h2>Appendix F: poems tagged "referencing-poets"<span id="pts-total"></span></h2>
+    <div class="pz-card" id="card-poets">
+      <p class="note" style="margin-top:0">Every poem tagged "referencing-poets", by the date in its title.</p>
+      <div class="pz-tools"><input type="search" id="pts-q" placeholder="Search titles, dates, places or notebooks" aria-label="Search poems tagged "referencing-poets""><span class="cnt" id="pts-cnt"></span></div>
+      <div class="pz-tablebox">
+        <table class="pz-table" id="tbl-poets" data-source="poets" data-row-key="id">
+          <thead><tr>
+            <th data-field="title"><button type="button" data-k="title">Title</button></th>
+            <th data-field="written"><button type="button" data-k="written">Written</button></th>
+            <th data-field="location"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  <div class="pz-modal" id="poem-modal" hidden>
+    <div class="pz-modal-box" role="dialog" data-source="poem" aria-modal="true" aria-labelledby="pm-title">
+      <button type="button" class="pz-modal-close" id="pm-close" aria-label="Close">×</button>
+      <div class="pz-latest-title" id="pm-title"></div>
+      <p class="pz-latest-meta" id="pm-meta"></p>
+      <p class="pz-latest-body" id="pm-body"></p>
+      <div class="pz-latest-tags" id="pm-tags"></div>
+    </div>
+  </div>
+</div>
+
+
+  </div>
+</div>
+<script>
+const COLORS = matchMedia('(prefers-color-scheme: dark)').matches
+  ? ['#6ea8e0', '#e39a5b', '#5fbf8d', '#d9789b', '#a88be0', '#c9b25a', '#56c1cc', '#e07f62']
+  : ['#2f6fb0', '#c96f22', '#2f8f5f', '#b5466e', '#7356b0', '#8f7a1f', '#1f8f9b', '#c0573a'];
+window.dash = {
+  colors: COLORS, _status: 'loading', _data: {}, _calcs: {}, _cbs: [],
+  loader() {}, calc(name, cfg) { this._calcs[name] = cfg; },
+  data(id) {
+    if (this._status !== 'ok') return { status: this._status };
+    return { status: 'ok', data: this._data[id] || [] };
+  },
+  onData(cb) { this._cbs.push(cb); try { cb(); } catch (e) { console.error(e); } },
+  _emit() { this._cbs.forEach(cb => { try { cb(); } catch (e) { console.error(e); } }); },
+  _set(ds) {
+    this._data = ds;
+    for (const [name, cfg] of Object.entries(this._calcs)) {
+      try { ds[name] = cfg.fn(...cfg.inputs.map(i => ds[i] || [])); } catch (e) { console.error(name, e); ds[name] = []; }
+    }
+    this._status = 'ok'; this._emit();
+  },
+  _loading() { this._status = 'loading'; this._emit(); },
+  _error() { this._status = 'error'; this._emit(); },
+};
+</script>
+<script>// Builds every dashboard dataset from raw poem rows, mirroring the SQL used in the Claude dashboard.
+function computeDatasets(rows, C, now = new Date()) {
+  const EXCLUDE = ['not-poetry', 'ignore'];
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const pad = (n) => String(n).padStart(2, '0');
+  const iso = (d) => d ? `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}` : null;
+  const longDate = (d) => d ? `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}` : null;
+  const re = (s) => new RegExp(s, 'i');
+  const R = { TW: re(C.TW), VN: re(C.VN), TH: re(C.TH), HK: re('Hong Kong|Kowloon|Macau'), CN: re(C.CN), NL: re(C.NL), DE: re(C.DE), TR: re('Incheon'), US: re(C.US) };
+
+  function parseDate(sf) {
+    const m = /(\d{2})\.(\d{2})\.(\d{2})(?:\s|\.md|\)|$)/.exec(sf || '');
+    if (!m) return null;
+    const mo = +m[1], dd = +m[2], yy = +m[3];
+    const y = yy < 70 ? 2000 + yy : 1900 + yy; // Postgres 'YY' rule
+    if (mo < 1 || mo > 12 || dd < 1 || dd > 31) return null;
+    const d = new Date(Date.UTC(y, mo - 1, dd));
+    return d.getUTCMonth() === mo - 1 ? d : null;
+  }
+  function country(p) {
+    const loc = p.loc, nb = p.notebook;
+    if (loc != null) {
+      if (R.TW.test(loc)) return 'Taiwan';
+      if (R.VN.test(loc)) return 'Vietnam';
+      if (R.TH.test(loc)) return 'Thailand';
+      if (R.HK.test(loc)) return 'Hong Kong';
+      if (R.CN.test(loc)) return 'China';
+      if (R.NL.test(loc)) return 'Netherlands';
+      if (R.DE.test(loc)) return 'Germany';
+      if (R.TR.test(loc)) return 'In transit';
+    }
+    if (nb === '[2025] - Taiwan') return 'Taiwan';
+    if (nb === '[2025] - Vietnam') return 'Vietnam';
+    if (nb === '[2025] - Thailand' || nb === '[2026] - Mae Rim - Krabi') return 'Thailand';
+    if (p.collection === '[2011] - China' && p.d && p.d.getUTCFullYear() === 2011) return 'China';
+    if (loc != null && R.US.test(loc)) return 'USA';
+    if (nb === '[2025] - USA pre' || nb === '[2025] - USA return') return 'USA';
+    return 'Unknown';
+  }
+
+  const poems = rows.filter(r => !(r.tags || []).some(t => EXCLUDE.includes(t))).map(r => {
+    const sf = r.source_file || '';
+    const d0 = parseDate(sf);
+    const hrM = /\d{2}\.\d{2}\.\d{2}\s+(\d{2})\.?\d{2}/.exec(sf);
+    const hmM = /\d{2}\.\d{2}\.\d{2}\s+(\d{2}\.?\d{2})/.exec(sf);
+    const locM = r.text != null ? /\n\d{2}\.\d{2}\.\d{2}[^\n/]*\/\s*([^\n]+)/.exec(r.text) : null;
+    const hr0 = hrM ? +hrM[1] : null;
+    const p = {
+      ...r, tags: r.tags || [], d0,
+      d: d0 && d0 <= today ? d0 : null,
+      hr: hr0 != null && hr0 >= 0 && hr0 <= 23 ? hr0 : null,
+      hm: hmM ? hmM[1].replace('.', '') : null,
+      loc: r.text != null ? (locM ? locM[1].trim() : null) : (r.loc || null),
+    };
+    p.country = country(p);
+    return p;
+  });
+  const dated = poems.filter(p => p.d);
+  const year = (p) => p.d.getUTCFullYear();
+  const count = (arr, keyFn) => { const m = new Map(); arr.forEach(x => { const k = keyFn(x); m.set(k, (m.get(k) || 0) + 1); }); return m; };
+  const sum = (arr, f) => arr.reduce((a, x) => a + (f(x) || 0), 0);
+  const avg = (arr, f) => { const v = arr.map(f).filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+  const byTitle = (a, b) => String(a.title || '').localeCompare(String(b.title || ''));
+  const byDateThenTitle = (a, b) => (a.d && b.d ? a.d - b.d : a.d ? -1 : b.d ? 1 : 0) || byTitle(a, b);
+
+  const out = {};
+  const years = dated.map(year);
+  out.summary = [{
+    poems: poems.length, dated: dated.length, timed: poems.filter(p => p.hr != null).length,
+    first_year: years.length ? Math.min(...years) : null, last_year: years.length ? Math.max(...years) : null,
+    words: sum(poems, p => p.words), avg_words: avg(poems, p => p.words), avg_lines: avg(poems, p => p.lines),
+  }];
+  const yMap = new Map();
+  dated.forEach(p => { const y = year(p); const o = yMap.get(y) || { year: y, poems: 0, words: 0 }; o.poems++; o.words += p.words || 0; yMap.set(y, o); });
+  out.by_year = [...yMap.values()].sort((a, b) => a.year - b.year);
+  const mw = count(dated, p => `${p.d.getUTCMonth() + 1}|${p.d.getUTCDay()}`);
+  out.month_weekday = [...mw].map(([k, n]) => { const [m, w] = k.split('|'); return { month: +m, weekday: +w, poems: n }; })
+    .sort((a, b) => a.month - b.month || a.weekday - b.weekday);
+  const hm = count(poems.filter(p => p.hr != null), p => p.hr);
+  out.hours = Array.from({ length: 24 }, (_, h) => ({ hour: h, poems: hm.get(h) || 0 }));
+
+  const fam = [];
+  Object.entries(C.fam).forEach(([f, ts]) => ts.split(/\s+/).forEach(t => fam.push([t, f])));
+  out.themes = fam.map(([theme, family]) => ({ theme, family, poems: poems.filter(p => p.tags.includes(theme)).length }))
+    .filter(r => r.poems > 0).sort((a, b) => b.poems - a.poems);
+
+  const era = (p) => { const y = year(p); return y < 2013 ? '2004–12' : y < 2018 ? '2013–17' : y < 2023 ? '2018–22' : '2023–26'; };
+  const eraTot = count(dated, era);
+  const eras = [...eraTot.keys()].sort();
+  const hits = new Map();
+  dated.forEach(p => p.tags.forEach(t => { if (C.TOP16.includes(t)) { const k = `${t}|${era(p)}`; hits.set(k, (hits.get(k) || 0) + 1); } }));
+  const hitThemes = [...new Set([...hits.keys()].map(k => k.split('|')[0]))].sort();
+  out.theme_eras = [];
+  hitThemes.forEach(theme => eras.forEach(e => {
+    const n = hits.get(`${theme}|${e}`) || 0, total = eraTot.get(e);
+    out.theme_eras.push({ theme, era: e, poems: n, total, share: Math.round(n / total * 10000) / 10000 });
+  }));
+
+  out.countries = [...count(poems, p => p.country)].map(([country, n]) => ({ country, poems: n })).sort((a, b) => b.poems - a.poems);
+  const cy = count(dated.filter(p => p.country !== 'Unknown'), p => `${p.country}|${year(p)}`);
+  out.country_years = [...cy].map(([k, n]) => { const [c, y] = k.split('|'); return { country: c, year: +y, poems: n }; })
+    .sort((a, b) => a.country.localeCompare(b.country) || a.year - b.year);
+  out.place_tags = C.PLACE.map(([tag, place, ctry]) => ({ place, country: ctry, poems: poems.filter(p => p.tags.includes(tag)).length }))
+    .filter(r => r.poems > 0).sort((a, b) => b.poems - a.poems || a.place.localeCompare(b.place)).slice(0, 15);
+
+  const filed = (p) => p.collection ?? p.notebook ?? null;
+  out.unlocated = poems.filter(p => p.country === 'Unknown').sort(byDateThenTitle).map(p => ({
+    id: p.id, title: p.title, written: iso(p.d), filed_in: filed(p), reason: p.loc == null ? 'No location line' : 'Location not recognized' }));
+  const tagged = (tag) => poems.filter(p => p.tags.includes(tag)).sort(byDateThenTitle).map(p => ({
+    id: p.id, title: p.title, written: iso(p.d), location: p.loc ?? (p.country !== 'Unknown' ? p.country : null), filed_in: filed(p) }));
+  out.revisit = tagged('revisit');
+  out.brief = tagged('brief');
+  out.collection = tagged('collection');
+  out.unfinished = tagged('not-finished');
+  out.poets = tagged('referencing-poets');
+
+  const card = (p, extra) => p ? [{
+    id: p.id, title: p.title, written: longDate(p.d0), time: p.hm ? `${p.hm.slice(0, 2)}:${p.hm.slice(2, 4)}` : null,
+    location: p.loc, words: p.words, lines: p.lines, tags: p.tags.join(', '), text: p.text, ...extra }] : [];
+  const latest = poems.filter(p => p.d0 && p.d0 <= today)
+    .sort((a, b) => (b.d0 - a.d0) || String(b.hm || '').localeCompare(String(a.hm || '')) || b.id - a.id)[0];
+  out.latest = card(latest);
+  const normTs = (v) => String(v).replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+  const ts = (p) => p.upnote_updated_at ? Date.parse(normTs(p.upnote_updated_at)) : null;
+  const upd = poems.slice().sort((a, b) => {
+    const x = ts(a), y = ts(b);
+    if (x !== y) { if (x == null) return 1; if (y == null) return -1; return y - x; }
+    const le = String(b.last_edited || '').localeCompare(String(a.last_edited || ''));
+    return le || b.id - a.id;
+  })[0];
+  const updatedLabel = (p) => {
+    if (!p) return null;
+    if (p.upnote_updated_at) {
+      const f = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Bangkok', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+      const o = Object.fromEntries(f.formatToParts(new Date(normTs(p.upnote_updated_at))).map(x => [x.type, x.value]));
+      return `${o.month} ${o.day}, ${o.year} at ${o.hour}:${o.minute}`;
+    }
+    return p.last_edited ? longDate(new Date(p.last_edited + 'T00:00:00Z')) : null;
+  };
+  out.updated = card(upd, { updated: updatedLabel(upd) });
+  out.poem_texts = poems.map(p => card(p)[0]);
+  return out;
+}
+
+</script>
+<script>
+const fromSupabase = ({ answer }) => {
+  let text = answer;
+  if (typeof text === 'string' && text.trim().startsWith('{')) { try { text = JSON.parse(text); } catch (e) { /* keep text */ } }
+  if (text && typeof text === 'object') text = text.result ?? text.error ?? JSON.stringify(text);
+  if (typeof text !== 'string') throw new Error('Unexpected answer from Supabase');
+  const m = text.match(/<untrusted-data-[^>]+>\s*(\[[\s\S]*\])\s*<\/untrusted-data-/);
+  if (!m) throw new Error(text.slice(0, 300));
+  return JSON.parse(m[1]);
+};
+['summary', 'by_year', 'month_weekday', 'hours', 'themes', 'theme_eras', 'countries', 'place_tags', 'country_years', 'unlocated', 'latest', 'revisit', 'brief', 'collection', 'unfinished', 'updated', 'poets', 'poem'].forEach(id =>
+  dash.loader(id, { description: 'Reads the JSON rows out of Supabase’s execute_sql answer.', fn: fromSupabase }));
+
+dash.calc('unlocated_counts', {
+  title: 'Unknown locations by reason',
+  description: 'Poems without a recognized location, counted by why.',
+  inputs: ['unlocated'],
+  fn: (unlocated) => {
+    const m = {};
+    unlocated.forEach(r => { m[r.reason] = (m[r.reason] || 0) + 1; });
+    return Object.entries(m).map(([reason, poems]) => ({ reason, poems }));
+  }
+});
+
+dash.calc('highlights', {
+  title: 'Headline highlights',
+  description: 'Peak year, most common hour, country with the most poems written, and most-tagged theme.',
+  inputs: ['by_year', 'hours', 'countries', 'themes'],
+  fn: (by_year, hours, countries, themes) => {
+    const top = (rows, k) => rows.reduce((a, b) => b[k] > a[k] ? b : a);
+    const y = top(by_year, 'poems'), h = top(hours, 'poems');
+    const c = top(countries.filter(r => r.country !== 'Unknown'), 'poems');
+    const t = top(themes, 'poems');
+    return [{ peak_year: y.year, peak_poems: y.poems, peak_hour: String(h.hour).padStart(2, '0') + ':00', top_country: c.country, top_theme: t.theme, top_theme_poems: t.poems }];
+  }
+});
+(function () {
+  const fmt = d3.format(',');
+  const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const FAMILIES = ['Mood', 'Existence', 'Love & body', 'World', 'Imagery'];
+  const COUNTRIES = ['USA', 'Thailand', 'Vietnam', 'Taiwan', 'Hong Kong', 'China', 'Netherlands', 'Germany', 'In transit', 'Unknown'];
+  const famColor = (f) => dash.colors[Math.max(0, FAMILIES.indexOf(f)) % dash.colors.length];
+  const ctyColor = (c) => (c === 'Unknown' || c === 'In transit') ? 'var(--cds-chart-muted)' : dash.colors[Math.max(0, COUNTRIES.indexOf(c)) % dash.colors.length];
+
+  const $ = (id) => document.getElementById(id);
+  function clear(el) { el.replaceChildren(); }
+  function fail(el) { clear(el); const d = document.createElement('div'); d.className = 'pz-fail'; d.textContent = 'Failed to load'; el.appendChild(d); }
+  function state(el, id) {
+    const s = dash.data(id);
+    el.classList.remove('dash-skeleton');
+    if (s.status === 'ok') return s.data;
+    clear(el);
+    if (s.status === 'error') fail(el); else el.classList.add('dash-skeleton');
+    return null;
+  }
+  function tip(el) {
+    let t = el.querySelector('.pz-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'pz-tip'; el.appendChild(t); }
+    return {
+      show(ev, key, val) {
+        t.replaceChildren();
+        const k = document.createElement('div'); k.className = 'k'; k.textContent = key;
+        const v = document.createElement('div'); v.textContent = val;
+        t.append(k, v); t.style.opacity = 1;
+        const r = el.getBoundingClientRect();
+        let x = ev.clientX - r.left + 12, y = ev.clientY - r.top - 10;
+        const w = t.offsetWidth;
+        if (x + w > r.width) x = Math.max(0, ev.clientX - r.left - w - 12);
+        t.style.left = x + 'px'; t.style.top = Math.max(0, y) + 'px';
+      },
+      hide() { t.style.opacity = 0; }
+    };
+  }
+  function measure(svg, texts) {
+    const g = svg.append('g');
+    let m = 0;
+    texts.forEach(s => { const n = g.append('text').text(s).node(); m = Math.max(m, n.getComputedTextLength()); });
+    g.remove();
+    return m;
+  }
+
+  // Vertical bars: rows, x key, y key
+  function vbars(el, rows, xKey, yKey, opts) {
+    clear(el);
+    const W = el.clientWidth || 600, H = 220;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const yMax = d3.max(rows, d => d[yKey]) || 1;
+    const y = d3.scaleLinear([0, yMax], [H - 24, 8]).nice();
+    const ml = measure(svg, y.ticks(4).map(fmt)) + 8;
+    const x = d3.scaleBand(rows.map(d => d[xKey]), [ml, W]).padding(0.25);
+    svg.append('g').selectAll('line').data(y.ticks(4)).join('line')
+      .attr('x1', ml).attr('x2', W).attr('y1', d => y(d)).attr('y2', d => y(d))
+      .attr('stroke', 'var(--cds-chart-grid)');
+    svg.append('g').selectAll('text').data(y.ticks(4)).join('text')
+      .attr('x', ml - 6).attr('y', d => y(d)).attr('dy', '0.32em').attr('text-anchor', 'end').text(fmt);
+    const every = Math.max(1, Math.ceil(rows.length / Math.max(1, Math.floor((W - ml) / (opts.labelW || 36)))));
+    svg.append('g').selectAll('text').data(rows.filter((d, i) => i % every === 0)).join('text')
+      .attr('x', d => x(d[xKey]) + x.bandwidth() / 2).attr('y', H - 6).attr('text-anchor', 'middle')
+      .text(d => opts.xLabel ? opts.xLabel(d[xKey]) : d[xKey]);
+    const tt = tip(el);
+    svg.append('g').selectAll('rect').data(rows).join('rect')
+      .attr('x', d => x(d[xKey])).attr('width', x.bandwidth())
+      .attr('y', d => y(d[yKey])).attr('height', d => Math.max(0, y(0) - y(d[yKey])))
+      .attr('rx', Math.min(4, x.bandwidth() / 2))
+      .attr('fill', d => opts.color ? opts.color(d) : dash.colors[0])
+      .on('mousemove', (ev, d) => { d3.select(ev.currentTarget).attr('opacity', 0.8); tt.show(ev, opts.xLabel ? opts.xLabel(d[xKey]) : String(d[xKey]), opts.tipVal(d)); })
+      .on('mouseleave', (ev) => { d3.select(ev.currentTarget).attr('opacity', 1); tt.hide(); });
+    svg.append('line').attr('x1', ml).attr('x2', W).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+  }
+
+  // Horizontal bars
+  function hbars(el, rows, labKey, valKey, opts) {
+    clear(el);
+    const W = el.clientWidth || 400, row = 24, H = rows.length * row + 4;
+    el.style.minHeight = H + 'px';
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const ml = Math.min(W * 0.45, measure(svg, rows.map(d => d[labKey])) + 10);
+    const mr = measure(svg, rows.map(d => fmt(d[valKey]))) + 8;
+    const x = d3.scaleLinear([0, d3.max(rows, d => d[valKey]) || 1], [ml, W - mr]);
+    const tt = tip(el);
+    const g = svg.selectAll('g').data(rows).join('g').attr('transform', (d, i) => `translate(0,${i * row})`);
+    g.append('text').attr('class', 'lab').attr('x', ml - 8).attr('y', row / 2).attr('dy', '0.32em').attr('text-anchor', 'end').text(d => d[labKey]);
+    g.append('rect').attr('x', ml).attr('y', 5).attr('height', row - 10)
+      .attr('width', d => Math.max(2, x(d[valKey]) - ml)).attr('rx', 4)
+      .attr('fill', d => opts.color ? opts.color(d) : dash.colors[0])
+      .on('mousemove', (ev, d) => tt.show(ev, d[labKey] + (opts.extra ? ' · ' + opts.extra(d) : ''), opts.tipVal(d)))
+      .on('mouseleave', () => tt.hide());
+    g.append('text').attr('x', d => x(d[valKey]) + 6).attr('y', row / 2).attr('dy', '0.32em').text(d => fmt(d[valKey]));
+  }
+
+  function heat(el, rows) {
+    clear(el);
+    const W = el.clientWidth || 400;
+    const svg = d3.select(el).append('svg').attr('width', '100%');
+    const ml = measure(svg, DAYS) + 8, mt = 18;
+    const cw = (W - ml) / 12, ch = Math.min(28, Math.max(18, cw * 0.8));
+    const H = mt + ch * 7 + 4;
+    svg.attr('viewBox', `0 0 ${W} ${H}`);
+    const ext = d3.extent(rows, d => d.poems);
+    const op = d3.scaleLinear(ext, [0.12, 1]);
+    const tt = tip(el);
+    const every = cw < 26 ? 2 : 1;
+    svg.append('g').selectAll('text').data(MONTHS).join('text')
+      .attr('x', (d, i) => ml + i * cw + cw / 2).attr('y', 12).attr('text-anchor', 'middle')
+      .text((d, i) => i % every === 0 ? d : '');
+    svg.append('g').selectAll('text').data(DAYS).join('text')
+      .attr('x', ml - 8).attr('y', (d, i) => mt + i * ch + ch / 2).attr('dy', '0.32em').attr('text-anchor', 'end').text(d => d);
+    svg.append('g').selectAll('rect').data(rows).join('rect')
+      .attr('x', d => ml + (d.month - 1) * cw + 1).attr('y', d => mt + d.weekday * ch + 1)
+      .attr('width', Math.max(1, cw - 2)).attr('height', ch - 2).attr('rx', 3)
+      .attr('fill', dash.colors[0]).attr('fill-opacity', d => op(d.poems))
+      .on('mousemove', (ev, d) => tt.show(ev, `${DAYS[d.weekday]}s in ${MONTHS[d.month - 1]}`, `${fmt(d.poems)} poems`))
+      .on('mouseleave', () => tt.hide());
+    el.style.minHeight = H + 'px';
+  }
+
+  // Row x era grid with labelled cells
+  function grid(el, rows, rowKey, val, opts) {
+    clear(el);
+    const W = el.clientWidth || 600;
+    const ck = opts.colKey || 'era';
+    const eras = Array.from(new Set(rows.map(d => d[ck]))).sort(d3.ascending);
+    let names = Array.from(new Set(rows.map(d => d[rowKey])));
+    if (opts.rowOrder) { const at = (c) => { const i = opts.rowOrder.indexOf(c); return i < 0 ? 99 : i; }; names.sort((a, b) => at(a) - at(b)); }
+    else names.sort((a, b) => d3.sum(rows.filter(d => d[rowKey] === b), val) - d3.sum(rows.filter(d => d[rowKey] === a), val));
+    const svg = d3.select(el).append('svg').attr('width', '100%');
+    const ml = Math.min(W * 0.4, measure(svg, names) + 10), mt = 20, ch = 26;
+    const cw = (W - ml) / eras.length, H = mt + names.length * ch + 2;
+    svg.attr('viewBox', `0 0 ${W} ${H}`);
+    el.style.minHeight = H + 'px';
+    const op = d3.scaleLinear([0, d3.max(rows, val) || 1], [0.04, 1]);
+    const tt = tip(el);
+    svg.append('g').selectAll('text').data(eras).join('text')
+      .attr('x', (d, i) => ml + i * cw + cw / 2).attr('y', 13).attr('text-anchor', 'middle').text((d, i) => (cw >= 30 || i % Math.ceil(30 / cw) === 0) ? (cw < 30 && typeof d === 'number' ? "'" + String(d).slice(2) : d) : '');
+    svg.append('g').selectAll('text').data(names).join('text').attr('class', 'lab')
+      .attr('x', ml - 8).attr('y', (d, i) => mt + i * ch + ch / 2).attr('dy', '0.32em').attr('text-anchor', 'end').text(d => d);
+    const cells = svg.append('g').selectAll('g').data(rows).join('g')
+      .attr('transform', d => `translate(${ml + eras.indexOf(d[ck]) * cw},${mt + names.indexOf(d[rowKey]) * ch})`);
+    cells.append('rect').attr('x', 1).attr('y', 1).attr('width', Math.max(1, cw - 2)).attr('height', ch - 2).attr('rx', 3)
+      .attr('fill', opts.color).attr('fill-opacity', d => op(val(d)))
+      .on('mousemove', (ev, d) => tt.show(ev, `${d[rowKey]} · ${d[ck]}`, opts.tipVal(d)))
+      .on('mouseleave', () => tt.hide());
+    cells.append('text').attr('x', cw / 2).attr('y', ch / 2).attr('dy', '0.32em').attr('text-anchor', 'middle')
+      .attr('pointer-events', 'none')
+      .style('fill', d => op(val(d)) > 0.55 ? 'var(--color-bg)' : 'var(--color-fg-muted)')
+      .text(d => cw > 34 ? opts.label(d) : '');
+  }
+
+  function drawRamps() {
+    document.querySelectorAll('.pz .pz-ramp').forEach(el => {
+      if (el.childElementCount) return;
+      const c = dash.colors[Number(el.dataset.ramp) || 0];
+      const lo = document.createElement('span'); lo.textContent = el.dataset.lo || 'fewer';
+      el.appendChild(lo);
+      [0.1, 0.32, 0.55, 0.78, 1].forEach(o => { const i = document.createElement('i'); i.style.background = c; i.style.opacity = o; el.appendChild(i); });
+      const hi = document.createElement('span'); hi.textContent = el.dataset.hi || 'more poems';
+      el.appendChild(hi);
+    });
+  }
+
+  function legend(el, items, colorFn) {
+    el.replaceChildren();
+    items.forEach(n => { const s = document.createElement('span'); s.style.setProperty('--sw', colorFn(n)); s.textContent = n; el.appendChild(s); });
+  }
+
+  function fillMarks() {
+    document.querySelectorAll('.pz [data-source][data-field]').forEach(el => {
+      const s = dash.data(el.dataset.source);
+      if (s.status !== 'ok') { if (s.status === 'error') { el.classList.remove('dash-skeleton'); el.textContent = '—'; } return; }
+      let row;
+      if (el.dataset.where) {
+        const conds = el.dataset.where.split('&').map(p => p.split('=').map(decodeURIComponent));
+        row = s.data.find(r => conds.every(([k, v]) => String(r[k]) === v));
+      } else row = s.data[Number(el.dataset.row || 0)];
+      el.classList.remove('dash-skeleton');
+      if (!row) { el.textContent = '—'; return; }
+      const v = row[el.dataset.field];
+      const isYear = /year/.test(el.dataset.field);
+      el.textContent = v == null ? '—' : (typeof v === 'number' && !isYear ? (el.dataset.field === 'words' ? compact.format(v) : fmt(v)) : String(v));
+    });
+  }
+
+  // Appendix tables: search + sort
+  function makeTable(cfg) {
+    const st = { key: 'written', dir: 1, q: '' };
+    const qEl = $(cfg.q);
+    qEl.addEventListener('input', () => { st.q = qEl.value.trim().toLowerCase(); draw(); });
+    document.querySelectorAll(`#${cfg.table} th button`).forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.k;
+      st.dir = st.key === k ? -st.dir : 1; st.key = k; draw();
+    }));
+    function draw() {
+      const s = dash.data(cfg.source);
+      const body = document.querySelector(`#${cfg.table} tbody`);
+      const box = body.closest('.pz-tablebox');
+      document.querySelectorAll(`#${cfg.table} th`).forEach(th => {
+        const k = th.querySelector('button').dataset.k;
+        if (k === st.key) th.setAttribute('aria-sort', st.dir > 0 ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
+      });
+      box.querySelectorAll('.pz-fail').forEach(n => n.remove());
+      if (s.status !== 'ok') {
+        body.replaceChildren();
+        $(cfg.cnt).textContent = ''; $(cfg.total).textContent = '';
+        if (s.status === 'error') fail(box.appendChild(document.createElement('div')));
+        else box.classList.add('dash-skeleton');
+        return;
+      }
+      box.classList.remove('dash-skeleton');
+      $(cfg.total).textContent = ` (${fmt(s.data.length)})`;
+      const rows = s.data.filter(r => !st.q || cfg.cols.some(([k]) => (r[k] || '').toLowerCase().includes(st.q)));
+      rows.sort((a, b) => {
+        const x = a[st.key], y = b[st.key];
+        if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+        return st.dir * String(x).localeCompare(String(y), 'en', { numeric: true, sensitivity: 'base' });
+      });
+      const frag = document.createDocumentFragment();
+      rows.forEach(r => {
+        const tr = document.createElement('tr'); tr.dataset.key = String(r.id);
+        cfg.cols.forEach(([k, empty, cls]) => {
+          const td = document.createElement('td'); const v = r[k];
+          if (k === 'title') {
+            const a = document.createElement('a'); a.href = '#'; a.className = 'pz-link'; a.dataset.poem = String(r.id);
+            a.textContent = v || empty; td.appendChild(a);
+          } else td.textContent = v || empty;
+          const c = (cls || '') + (v ? '' : ' muted');
+          if (c.trim()) td.className = c.trim();
+          tr.appendChild(td);
+        });
+        frag.appendChild(tr);
+      });
+      if (!rows.length) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = cfg.cols.length; td.className = 'muted'; td.textContent = st.q ? 'No matching poems.' : (cfg.empty || 'No poems.'); tr.appendChild(td); frag.appendChild(tr); }
+      body.replaceChildren(frag);
+      $(cfg.cnt).textContent = st.q ? `${fmt(rows.length)} of ${fmt(s.data.length)} poems` : `${fmt(s.data.length)} poems`;
+      // Show five rows at a time; scroll for the rest.
+      requestAnimationFrame(() => {
+        const head = box.querySelector('thead'), trs = body.querySelectorAll('tr');
+        if (!trs.length) return;
+        let h = head ? head.getBoundingClientRect().height : 0;
+        for (let i = 0; i < Math.min(5, trs.length); i++) h += trs[i].getBoundingClientRect().height;
+        box.style.maxHeight = Math.ceil(h) + 'px';
+      });
+    }
+    return draw;
+  }
+  const drawTable = makeTable({ source: 'unlocated', table: 'tbl-unlocated', q: 'unloc-q', cnt: 'unloc-cnt', total: 'unloc-total',
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['filed_in', '—', 'muted hide-narrow'], ['reason', '', 'muted']] });
+  const drawRevisit = makeTable({ source: 'revisit', table: 'tbl-revisit', q: 'rev-q', cnt: 'rev-cnt', total: 'rev-total',
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+  const drawBrief = makeTable({ source: 'brief', table: 'tbl-brief', q: 'brf-q', cnt: 'brf-cnt', total: 'brf-total',
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+  const draw_collection = makeTable({ source: 'collection', table: 'tbl-collection', q: 'coll-q', cnt: 'coll-cnt', total: 'coll-total', empty: 'No poems have the "collection" tag yet.',
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+  const draw_unfinished = makeTable({ source: 'unfinished', table: 'tbl-unfinished', q: 'unf-q', cnt: 'unf-cnt', total: 'unf-total', empty: 'No poems have the "not-finished" tag yet.',
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+  const draw_poets = makeTable({ source: 'poets', table: 'tbl-poets', q: 'pts-q', cnt: 'pts-cnt', total: 'pts-total', empty: 'No poems have the "referencing-poets" tag yet.',
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+
+  function drawPoemCard(pre) {
+    const box = $(pre);
+    const ids = ['title', 'meta', 'body', 'tags'].map(k => `${pre}-${k}`);
+    box.querySelectorAll('.pz-fail').forEach(n => n.remove());
+    const s = dash.data(pre);
+    if (s.status !== 'ok' || !s.data.length) {
+      ids.forEach(i => { $(i).textContent = ''; });
+      if (s.status === 'error') { box.classList.remove('dash-skeleton'); const d = document.createElement('div'); d.className = 'pz-fail'; d.textContent = 'Failed to load'; box.appendChild(d); }
+      else if (s.status === 'ok') { box.classList.remove('dash-skeleton'); $(`${pre}-meta`).textContent = 'No poems yet.'; }
+      else box.classList.add('dash-skeleton');
+      return;
+    }
+    box.classList.remove('dash-skeleton');
+    const r = s.data[0];
+    let body = String(r.text || '').replace(/\r/g, '');
+    const cut = body.lastIndexOf('\n---');
+    if (cut > 0) body = body.slice(0, cut);
+    $(`${pre}-title`).textContent = r.title || 'Untitled';
+    const meta = [r.written, r.time, r.location].filter(Boolean).join(' · ') + ` · ${fmt(r.words)} words`;
+    $(`${pre}-meta`).textContent = r.updated ? `Updated ${r.updated} · written ${meta}` : meta;
+    $(`${pre}-body`).textContent = body.trim();
+    $(`${pre}-tags`).textContent = r.tags ? 'Tags: ' + r.tags : '';
+  }
+  const drawLatest = () => { drawPoemCard('latest'); drawPoemCard('updated'); };
+
+  // Poem viewer: click a title to read the poem
+  function poemBody(t) {
+    let body = String(t || '').replace(/\r/g, '');
+    const cut = body.lastIndexOf('\n---');
+    return (cut > 0 ? body.slice(0, cut) : body).trim();
+  }
+  // Full text loads only when a title is clicked.
+  function findRow(id) {
+    for (const src of ['latest', 'updated', 'poem_texts', 'unlocated', 'revisit', 'brief', 'collection', 'unfinished', 'poets']) {
+      const s = dash.data(src);
+      if (s.status === 'ok' && Array.isArray(s.data)) { const r = s.data.find(x => String(x.id) === String(id)); if (r) return r; }
+    }
+    return null;
+  }
+  const modal = $('poem-modal');
+  let lastFocus = null, pendingPoem = null;
+  function fillPoem(r, text, note) {
+    $('pm-title').textContent = (r && r.title) || 'Untitled';
+    $('pm-meta').textContent = r ? [r.written, r.time, r.location].filter(Boolean).join(' · ') + (r.words != null ? ` · ${fmt(r.words)} words` : '') : '';
+    $('pm-body').textContent = note || poemBody(text);
+    $('pm-body').classList.toggle('dash-skeleton', note === 'Loading…');
+    $('pm-tags').textContent = r && r.tags ? 'Tags: ' + r.tags : '';
+  }
+  function showPending() {
+    if (pendingPoem == null || modal.hidden) return;
+    const s = dash.data('poem');
+    const r = s.status === 'ok' && Array.isArray(s.data) ? s.data.find(x => String(x.id) === String(pendingPoem)) : null;
+    if (r && !s.refreshing) fillPoem(r, r.text);
+    else if (s.status === 'error') fillPoem(findRow(pendingPoem), '', 'Could not load this poem.');
+  }
+  async function openPoem(id) {
+    lastFocus = document.activeElement;
+    pendingPoem = id;
+    const row = findRow(id);
+    modal.hidden = false;
+    $('pm-close').focus();
+    if (row && row.text) { fillPoem(row, row.text); return; }
+    fillPoem(row, '', 'Loading…');
+    if (window.fetchPoem) {
+      try { const r = await window.fetchPoem(id); if (pendingPoem === id) fillPoem({ ...row, ...r }, r.text); }
+      catch (e) { if (pendingPoem === id) fillPoem(row, '', 'Could not load this poem.'); }
+    } else {
+      dash.setParams({ poem_id: Number(id) });
+      showPending();
+    }
+  }
+  function closePoem() { pendingPoem = null; modal.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('.pz-link');
+    if (a) { e.preventDefault(); openPoem(a.dataset.poem); }
+  });
+  $('pm-close').addEventListener('click', closePoem);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closePoem(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closePoem(); });
+
+  dash.onData(() => {
+    showPending();
+    fillMarks();
+    drawLatest();
+    let r;
+    if ((r = state($('ch-years'), 'by_year'))) vbars($('ch-years'), r, 'year', 'poems', {
+      labelW: 40, xLabel: v => String(v),
+      color: d => (d.year >= 2019 && d.year <= 2021) ? dash.colors[0] : 'var(--cds-chart-muted)',
+      tipVal: d => `${fmt(d.poems)} poems · ${fmt(d.words)} words`
+    });
+    if ((r = state($('ch-heat'), 'month_weekday'))) heat($('ch-heat'), r);
+    if ((r = state($('ch-countries'), 'countries'))) hbars($('ch-countries'), r, 'country', 'poems', { color: d => ctyColor(d.country), tipVal: d => `${fmt(d.poems)} poems` });
+    if ((r = state($('ch-places'), 'place_tags'))) {
+      legend($('lg-places'), COUNTRIES.filter(c => r.some(d => d.country === c)), ctyColor);
+      hbars($('ch-places'), r, 'place', 'poems', { color: d => ctyColor(d.country), extra: d => d.country, tipVal: d => `${fmt(d.poems)} poems tagged` });
+    } else $('lg-places').replaceChildren();
+    if ((r = state($('ch-country-years'), 'country_years'))) grid($('ch-country-years'), r, 'country', d => d.poems, { colKey: 'year', color: dash.colors[1], rowOrder: COUNTRIES, label: d => fmt(d.poems), tipVal: d => `${fmt(d.poems)} poems` });
+    if ((r = state($('ch-hours'), 'hours'))) vbars($('ch-hours'), r, 'hour', 'poems', { labelW: 30, xLabel: v => String(v).padStart(2, '0'), color: () => dash.colors[0], tipVal: d => `${fmt(d.poems)} poems from ${String(d.hour).padStart(2, '0')}:00 to ${String(d.hour).padStart(2, '0')}:59` });
+    drawRamps();
+    drawTable();
+    drawRevisit();
+    drawBrief();
+    draw_collection();
+    draw_unfinished();
+    draw_poets();
+    if ((r = state($('ch-theme-eras'), 'theme_eras'))) grid($('ch-theme-eras'), r, 'theme', d => d.share, { color: dash.colors[0], label: d => d3.format('.0%')(d.share), tipVal: d => `${d3.format('.1%')(d.share)} of poems (${fmt(d.poems)} of ${fmt(d.total)})` });
+    if ((r = state($('ch-themes'), 'themes'))) {
+      legend($('lg-themes'), FAMILIES, famColor);
+      const top = r.slice().sort((a, b) => b.poems - a.poems).slice(0, 24);
+      hbars($('ch-themes'), top, 'theme', 'poems', { color: d => famColor(d.family), extra: d => d.family, tipVal: d => `${fmt(d.poems)} poems` });
+    } else $('lg-themes').replaceChildren();
+  });
+})();
+</script>
+<script>
+const CONSTS = {"TW": "Da-an|Jhong|Danshuei|Singfuliao|Xinyi Road|ShiDa|OH CHA CHA|NEXT DOOR|Yaboo|Neighbor.s Cafe|Taipei|Taiwan|Chiayi|Chaiyi|Yongkang|Jinhua|Qingtian|Taoyuan|Taichung|Kaohsiung|Tainan", "VN": "Mekong|Saigon|Bao Loc|Ba Ria|Phu My|Danang|Da Nang|Da Lat|Dalat|SGN|Vietnam|Tỉnh|Hanoi|Vung Tau|Hoi An|Nha Trang", "TH": "Bangkok|BKK|Mae Rim|Krabi|Chiang|Lamphun|Pak Chong|Chom ?Thong|Thailand|Beekeeper|Sukhothai|Lampang|Ao Nang|Samut", "CN": "China|Beijing|Shanghai|Guangzhou|Shenzhen|Shantou|Xiamen", "NL": "Netherlands|Rotterdam|Amsterdam", "DE": "Germany|Berlin", "US": "1007 Ct|Roots|sbux|Starbucks|Queen Anne|Colleyville|Hurst|Bedford|Euless|Grapevine|Keller|Southlake|Dallas|Fort Worth|Arlington|Denton|Waco|Austin|San Antonio|San Diego|Jasper|Texas|, TX|, AR|Arkansas|Florida|Spokane|Tucson|Del Rio|Whole Foods|Somerset|Rampart|Chic-fil-A|Torchy|Greenville|Estate Coffee|Brew.s|Race Street|Trinity|Babylon|Chapp|Scooter|Hampton Inn|Marriott|NRH|CMS|CNC|Amherst|Chisholm|Precinct|Sandy Lake|Smithfield|Mid-Cities|Glade|Broadway|Not Just Pho|Boba Tea|Tandoor|Pho One|Pho Bac|Ahoyama|Executive|Buon Giorno|Flavors Indian|Sweet Magik|Bird Rock|Dichotomy|Trio|SMS|Sierra Springs|Hidden Oaks|Brown Trail|Botanical|Rosa.s|fire station", "fam": {"Mood": "frustration sadness mania desperation depression anxiety calm loneliness anger isolation", "Love & body": "infatuation lust longing biology blood", "Existence": "purpose death suicide memory dream violence", "World": "nature animal ideology religion political environmental-critique", "Imagery": "visuals aural smell wind sun fire-burn rain"}, "TOP16": ["frustration", "purpose", "violence", "mania", "memory", "sadness", "nature", "death", "suicide", "isolation", "depression", "calm", "infatuation", "anxiety", "lust", "dream"], "PLACE": [["Vietnam", "Vietnam", "Vietnam"], ["Saigon", "Saigon", "Vietnam"], ["Phu-My", "Phu My", "Vietnam"], ["Bao-Loc", "Bao Loc", "Vietnam"], ["Ba-Ria", "Ba Ria", "Vietnam"], ["Danang", "Danang", "Vietnam"], ["Taiwan", "Taiwan", "Taiwan"], ["Taipei", "Taipei", "Taiwan"], ["Chiayi", "Chiayi", "Taiwan"], ["China", "China", "China"], ["Hong-Kong", "Hong Kong", "China"], ["Thailand", "Thailand", "Thailand"], ["Bangkok", "Bangkok", "Thailand"], ["Pak-Chong", "Pak Chong", "Thailand"], ["Mae-Rim", "Mae Rim", "Thailand"], ["Krabi", "Krabi", "Thailand"], ["Lamphun", "Lamphun", "Thailand"], ["Chiang-Mai", "Chiang Mai", "Thailand"], ["Chiang-Rai", "Chiang Rai", "Thailand"], ["San-Antonio", "San Antonio", "USA"], ["San-Diego", "San Diego", "USA"], ["Colleyville", "Colleyville", "USA"], ["Florida", "Florida", "USA"], ["Austin", "Austin", "USA"], ["Waco", "Waco", "USA"], ["Texas", "Texas", "USA"], ["Spokane", "Spokane", "USA"], ["Washington", "Washington", "USA"], ["Del-Rio", "Del Rio", "USA"], ["Netherlands", "Netherlands", "Netherlands"], ["Rotterdam", "Rotterdam", "Netherlands"], ["Germany", "Germany", "Germany"], ["Berlin", "Berlin", "Germany"]]};
+const sb = window.supabase.createClient('https://jblxjixgkfsejzvmbxgb.supabase.co', 'sb_publishable_x2U2s3sp-bvpIM-xG1TTtA_TJv9eNDg', { auth: { persistSession: true, autoRefreshToken: true } });
+const COLS = 'id,title,source_file,tags,words,lines,notebook,collection,upnote_updated_at,last_edited,loc';
+const $id = (i) => document.getElementById(i);
+let loadedOnce = false;
+
+async function fetchAll() {
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb.from('poems_meta').select(COLS).order('id').range(from, from + 999);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < 1000) break;
+  }
+  return rows;
+}
+
+async function load() {
+  $id('load-err').hidden = true;
+  $id('refresh').disabled = true;
+  if (loadedOnce) $id('stamp').textContent = 'Refreshing…'; else dash._loading();
+  try {
+    const rows = await fetchAll();
+    if (!rows.length) throw new Error('No poems were returned. This account may not have read access.');
+    const ds = computeDatasets(rows, CONSTS);
+    dash._set(ds);
+    // Only the two featured poems need their full text up front.
+    const ids = [ds.latest[0]?.id, ds.updated[0]?.id].filter(x => x != null);
+    if (ids.length) {
+      const { data: texts, error: tErr } = await sb.from('poems').select('id,text').in('id', ids);
+      if (tErr) throw tErr;
+      const byId = new Map(texts.map(t => [t.id, t.text]));
+      for (const k of ['latest', 'updated']) if (ds[k][0]) ds[k][0].text = byId.get(ds[k][0].id) ?? '';
+      dash._emit();
+    }
+    loadedOnce = true;
+    $id('stamp').textContent = `${rows.length.toLocaleString()} poems loaded ${new Date().toLocaleString()}`;
+  } catch (e) {
+    console.error(e);
+    $id('load-err').textContent = 'Could not load poems from Supabase: ' + (e.message || e);
+    $id('load-err').hidden = false;
+    if (!loadedOnce) dash._error();
+    $id('stamp').textContent = '';
+  } finally {
+    $id('refresh').disabled = false;
+  }
+}
+
+function show(signedIn, email) {
+  $id('auth').hidden = signedIn;
+  $id('app').hidden = !signedIn;
+  $id('who').textContent = email ? `Signed in as ${email}` : '';
+}
+
+$id('login').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  $id('login-ok').textContent = '';
+  if (!$id('password').value) { $id('login-err').textContent = 'Enter your password, or use "Email me a sign-in link".'; return; }
+  const btn = $id('login-btn'); btn.disabled = true; $id('login-err').textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email: $id('email').value.trim(), password: $id('password').value });
+  btn.disabled = false;
+  if (error) { $id('login-err').textContent = error.message || 'Sign-in failed.'; return; }
+  $id('password').value = '';
+  show(true, data.user?.email); load();
+});
+$id('logout').addEventListener('click', async () => { await sb.auth.signOut(); loadedOnce = false; dash._loading(); show(false); });
+$id('refresh').addEventListener('click', load);
+const textCache = new Map();
+window.fetchPoem = async (id) => {
+  id = Number(id);
+  if (!textCache.has(id)) {
+    const { data, error } = await sb.from('poems').select('id,text').eq('id', id).single();
+    if (error) throw error;
+    textCache.set(id, data.text);
+  }
+  return { text: textCache.get(id) };
+};
+
+// Passwordless sign-in and password reset by email.
+const isRecovery = /type=recovery/.test(location.hash);
+const returnUrl = /^https?:/.test(location.protocol) ? location.origin + location.pathname : null;
+const cleanUrl = () => { if (location.hash) history.replaceState(null, '', location.pathname + location.search); };
+function emailOrError() {
+  const email = $id('email').value.trim();
+  $id('login-err').textContent = ''; $id('login-ok').textContent = '';
+  if (!email) { $id('login-err').textContent = 'Enter your email first.'; return null; }
+  if (!returnUrl) { $id('login-err').textContent = 'Email links only work when this page is opened from its web address (for example GitHub Pages), not as a file on your computer.'; return null; }
+  return email;
+}
+$id('magic-btn').addEventListener('click', async () => {
+  const email = emailOrError(); if (!email) return;
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: returnUrl } });
+  if (error) $id('login-err').textContent = error.message;
+  else $id('login-ok').textContent = `Check ${email} for a sign-in link, then open it in this browser.`;
+});
+$id('forgot-btn').addEventListener('click', async () => {
+  const email = emailOrError(); if (!email) return;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: returnUrl });
+  if (error) $id('login-err').textContent = error.message;
+  else $id('login-ok').textContent = `Check ${email} for a link to set a new password.`;
+});
+function showReset() {
+  $id('auth').hidden = false; $id('app').hidden = true;
+  $id('login').hidden = true; $id('reset').hidden = false;
+  $id('new-password').focus();
+}
+$id('reset').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const btn = $id('reset-btn'); btn.disabled = true; $id('reset-err').textContent = '';
+  const { data, error } = await sb.auth.updateUser({ password: $id('new-password').value });
+  btn.disabled = false;
+  if (error) { $id('reset-err').textContent = error.message; return; }
+  $id('new-password').value = '';
+  $id('reset').hidden = true; $id('login').hidden = false;
+  cleanUrl(); show(true, data.user?.email); load();
+});
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') { showReset(); return; }
+  if (event === 'SIGNED_IN' && session && $id('app').hidden && !isRecovery && $id('reset').hidden) {
+    cleanUrl(); show(true, session.user?.email); if (!loadedOnce) load();
+  }
+});
+
+(async () => {
+  const { data } = await sb.auth.getSession();
+  if (isRecovery && data.session) { showReset(); return; }
+  if (data.session) { cleanUrl(); show(true, data.session.user?.email); if (!loadedOnce) load(); } else show(false);
+})();
+</script>
+</body>
+</html>
