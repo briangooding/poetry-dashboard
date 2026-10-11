@@ -4,21 +4,21 @@ A single-page dashboard of poetry stats (when, where and what poems are about) t
 
 ## How the password works
 
-The page asks for the **email and password of your Supabase account** for the poetry project. It signs in with Supabase Auth and loads the poems with your session, so the database's row-level security decides who can read them. The existing rule only lets `briangoodingth@gmail.com` read `public.poems`, so anyone else who opens the page sees nothing, even if they find the URL or the code.
+The page asks for the **email and password of your Supabase account** for the poetry project. It signs in with Supabase Auth and loads the poems with your session, so the database's row-level security decides who can read them. The existing rule only lets the owner's account read `public.poems`, so anyone else who opens the page sees nothing, even if they find the URL or the code.
 
 The only key in `index.html` is the project's *publishable* key, which is designed to be public. No secret keys are stored in this repository.
 
 ## Setup
 
-1. Create a new **private** repository on GitHub (for example `poetry-dashboard`).
+1. Create a new repository on GitHub (for example `poetry-dashboard`).
 2. Upload `index.html` and this `README.md` (Add file → Upload files → Commit).
 3. To open it as a website, go to **Settings → Pages**, set Source to *Deploy from a branch*, choose `main` and `/ (root)`, and save. The site appears at `https://<your-username>.github.io/poetry-dashboard/` after a minute.
-   - GitHub Pages for a *private* repository needs a paid plan (GitHub Pro or higher). On the free plan, you can either make the repository public (your poems stay protected by the sign-in, only the page code becomes visible) or skip Pages and open `index.html` straight from your computer.
+   - This repository is public so GitHub Pages works on the free plan. Only the page code is visible; the poems load only after signing in.
 4. Open the page and sign in with your Supabase email and password.
 
 ### Signing in without a password
 
-Signing in to supabase.com with Google is a separate login. This page uses the poetry project's own user, `briangoodingth@gmail.com`, which has its own password. If you don't know it:
+Signing in to supabase.com with Google is a separate login. This page uses the poetry project's own user (your email), which has its own password. If you don't know it:
 
 1. In the Supabase dashboard, open the poetry project → **Authentication → URL Configuration** and add the page's address (for example `https://<your-username>.github.io/poetry-dashboard/`) under **Redirect URLs**. Do this once.
 2. Open the page from that address, type your email, and click **Email me a sign-in link** (or **Forgot password?** to set a new password).
