@@ -111,6 +111,12 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 .pz-modal-box { position: relative; width: 100%; max-width: 560px; background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); box-shadow: var(--cds-shadow-popover); }
 .pz-modal-box .pz-latest-body { max-height: none; overflow: visible; }
 .pz-modal-close { position: absolute; top: 10px; right: 10px; font: inherit; font-size: 18px; line-height: 1; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); cursor: pointer; }
+.pz-back { all: unset; cursor: pointer; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-decoration: underline; text-underline-offset: 3px; margin-bottom: var(--cds-gap-sm); display: inline-block; }
+.pz-back:hover { color: var(--color-fg); }
+.pz-plist { display: flex; flex-direction: column; max-height: 60vh; overflow-y: auto; border-top: 1px solid var(--color-border-line); }
+.pz-plist button { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; gap: var(--cds-gap-md); padding: var(--cds-pad-xs) 2px; border-bottom: 1px solid var(--color-border-line); font-size: var(--cds-font-size-body); }
+.pz-plist button:hover, .pz-plist button:focus-visible { background: color-mix(in srgb, var(--color-fg) 5%, transparent); }
+.pz-plist button span { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; white-space: nowrap; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -353,8 +359,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
   <div class="pz-modal" id="poem-modal" hidden>
     <div class="pz-modal-box" role="dialog" data-source="poem" aria-modal="true" aria-labelledby="pm-title">
       <button type="button" class="pz-modal-close" id="pm-close" aria-label="Close">×</button>
+      <button type="button" class="pz-back" id="pm-back" hidden>← Back to list</button>
       <div class="pz-latest-title" id="pm-title"></div>
       <p class="pz-latest-meta" id="pm-meta"></p>
+      <div class="pz-plist" id="pm-list" hidden></div>
       <p class="pz-latest-body" id="pm-body"></p>
       <div class="pz-latest-tags" id="pm-tags"></div>
     </div>
@@ -368,6 +376,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 const COLORS = matchMedia('(prefers-color-scheme: dark)').matches
   ? ['#6ea8e0', '#e39a5b', '#5fbf8d', '#d9789b', '#a88be0', '#c9b25a', '#56c1cc', '#e07f62']
   : ['#2f6fb0', '#c96f22', '#2f8f5f', '#b5466e', '#7356b0', '#8f7a1f', '#1f8f9b', '#c0573a'];
+window.__standalone = true;
 window.dash = {
   colors: COLORS, _status: 'loading', _data: {}, _calcs: {}, _cbs: [],
   loader() {}, calc(name, cfg) { this._calcs[name] = cfg; },
@@ -491,7 +500,7 @@ function computeDatasets(rows, C, now = new Date()) {
   const cy = count(dated.filter(p => p.country !== 'Unknown'), p => `${p.country}|${year(p)}`);
   out.country_years = [...cy].map(([k, n]) => { const [c, y] = k.split('|'); return { country: c, year: +y, poems: n }; })
     .sort((a, b) => a.country.localeCompare(b.country) || a.year - b.year);
-  out.place_tags = C.PLACE.map(([tag, place, ctry]) => ({ place, country: ctry, poems: poems.filter(p => p.tags.includes(tag)).length }))
+  out.place_tags = C.PLACE.map(([tag, place, ctry]) => ({ tag, place, country: ctry, poems: poems.filter(p => p.tags.includes(tag)).length }))
     .filter(r => r.poems > 0).sort((a, b) => b.poems - a.poems || a.place.localeCompare(b.place)).slice(0, 15);
 
   const filed = (p) => p.collection ?? p.notebook ?? null;
@@ -530,6 +539,7 @@ function computeDatasets(rows, C, now = new Date()) {
   };
   out.updated = card(upd, { updated: updatedLabel(upd) });
   out.poem_texts = poems.map(p => card(p)[0]);
+  out._poems = poems.map(p => ({ id: p.id, title: p.title, iso: iso(p.d), year: p.d ? p.d.getUTCFullYear() : null, month: p.d ? p.d.getUTCMonth() + 1 : null, weekday: p.d ? p.d.getUTCDay() : null, hr: p.hr, country: p.country, tags: p.tags, era: p.d ? era(p) : null }));
   return out;
 }
 
@@ -641,8 +651,10 @@ dash.calc('highlights', {
       .attr('y', d => y(d[yKey])).attr('height', d => Math.max(0, y(0) - y(d[yKey])))
       .attr('rx', Math.min(4, x.bandwidth() / 2))
       .attr('fill', d => opts.color ? opts.color(d) : dash.colors[0])
-      .on('mousemove', (ev, d) => { d3.select(ev.currentTarget).attr('opacity', 0.8); tt.show(ev, opts.xLabel ? opts.xLabel(d[xKey]) : String(d[xKey]), opts.tipVal(d)); })
-      .on('mouseleave', (ev) => { d3.select(ev.currentTarget).attr('opacity', 1); tt.hide(); });
+      .on('mousemove', (ev, d) => { d3.select(ev.currentTarget).attr('opacity', 0.8); tt.show(ev, opts.xLabel ? opts.xLabel(d[xKey]) : String(d[xKey]), opts.tipVal(d) + (opts.onPick ? ' · click to list' : '')); })
+      .on('mouseleave', (ev) => { d3.select(ev.currentTarget).attr('opacity', 1); tt.hide(); })
+      .style('cursor', opts.onPick ? 'pointer' : null)
+      .on('click', (ev, d) => { if (opts.onPick) { tt.hide(); opts.onPick(d); } });
     svg.append('line').attr('x1', ml).attr('x2', W).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
   }
 
@@ -661,12 +673,15 @@ dash.calc('highlights', {
     g.append('rect').attr('x', ml).attr('y', 5).attr('height', row - 10)
       .attr('width', d => Math.max(2, x(d[valKey]) - ml)).attr('rx', 4)
       .attr('fill', d => opts.color ? opts.color(d) : dash.colors[0])
-      .on('mousemove', (ev, d) => tt.show(ev, d[labKey] + (opts.extra ? ' · ' + opts.extra(d) : ''), opts.tipVal(d)))
-      .on('mouseleave', () => tt.hide());
+      .on('mousemove', (ev, d) => tt.show(ev, d[labKey] + (opts.extra ? ' · ' + opts.extra(d) : ''), opts.tipVal(d) + (opts.onPick ? ' · click to list' : '')))
+      .on('mouseleave', () => tt.hide())
+      .style('cursor', opts.onPick ? 'pointer' : null)
+      .on('click', (ev, d) => { if (opts.onPick) { tt.hide(); opts.onPick(d); } });
+    if (opts.onPick) g.select('text.lab').style('cursor', 'pointer').on('click', (ev, d) => opts.onPick(d));
     g.append('text').attr('x', d => x(d[valKey]) + 6).attr('y', row / 2).attr('dy', '0.32em').text(d => fmt(d[valKey]));
   }
 
-  function heat(el, rows) {
+  function heat(el, rows, opts = {}) {
     clear(el);
     const W = el.clientWidth || 400;
     const svg = d3.select(el).append('svg').attr('width', '100%');
@@ -687,8 +702,10 @@ dash.calc('highlights', {
       .attr('x', d => ml + (d.month - 1) * cw + 1).attr('y', d => mt + d.weekday * ch + 1)
       .attr('width', Math.max(1, cw - 2)).attr('height', ch - 2).attr('rx', 3)
       .attr('fill', dash.colors[0]).attr('fill-opacity', d => op(d.poems))
-      .on('mousemove', (ev, d) => tt.show(ev, `${DAYS[d.weekday]}s in ${MONTHS[d.month - 1]}`, `${fmt(d.poems)} poems`))
-      .on('mouseleave', () => tt.hide());
+      .on('mousemove', (ev, d) => tt.show(ev, `${DAYS[d.weekday]}s in ${MONTHS[d.month - 1]}`, `${fmt(d.poems)} poems` + (opts.onPick ? ' · click to list' : '')))
+      .on('mouseleave', () => tt.hide())
+      .style('cursor', opts.onPick ? 'pointer' : null)
+      .on('click', (ev, d) => { if (opts.onPick) { tt.hide(); opts.onPick(d); } });
     el.style.minHeight = H + 'px';
   }
 
@@ -716,8 +733,10 @@ dash.calc('highlights', {
       .attr('transform', d => `translate(${ml + eras.indexOf(d[ck]) * cw},${mt + names.indexOf(d[rowKey]) * ch})`);
     cells.append('rect').attr('x', 1).attr('y', 1).attr('width', Math.max(1, cw - 2)).attr('height', ch - 2).attr('rx', 3)
       .attr('fill', opts.color).attr('fill-opacity', d => op(val(d)))
-      .on('mousemove', (ev, d) => tt.show(ev, `${d[rowKey]} · ${d[ck]}`, opts.tipVal(d)))
-      .on('mouseleave', () => tt.hide());
+      .on('mousemove', (ev, d) => tt.show(ev, `${d[rowKey]} · ${d[ck]}`, opts.tipVal(d) + (opts.onPick ? ' · click to list' : '')))
+      .on('mouseleave', () => tt.hide())
+      .style('cursor', opts.onPick ? 'pointer' : null)
+      .on('click', (ev, d) => { if (opts.onPick) { tt.hide(); opts.onPick(d); } });
     cells.append('text').attr('x', cw / 2).attr('y', ch / 2).attr('dy', '0.32em').attr('text-anchor', 'middle')
       .attr('pointer-events', 'none')
       .style('fill', d => op(val(d)) > 0.55 ? 'var(--color-bg)' : 'var(--color-fg-muted)')
@@ -888,8 +907,36 @@ dash.calc('highlights', {
     if (r && !s.refreshing) fillPoem(r, r.text);
     else if (s.status === 'error') fillPoem(findRow(pendingPoem), '', 'Could not load this poem.');
   }
-  async function openPoem(id) {
-    lastFocus = document.activeElement;
+  // Clicking a chart category lists the poems behind it (standalone page only: it has every poem in memory).
+  let listOpen = false;
+  function showView(list) {
+    $('pm-list').hidden = !list;
+    $('pm-body').hidden = list; $('pm-tags').hidden = list;
+    $('pm-back').hidden = list || !listOpen;
+  }
+  function showList(label, test) {
+    const s = dash.data('_poems');
+    if (s.status !== 'ok') return;
+    const rows = s.data.filter(test).sort((a, b) => String(b.iso || '').localeCompare(String(a.iso || '')) || String(a.title || '').localeCompare(String(b.title || '')));
+    if (modal.hidden) lastFocus = document.activeElement;
+    listOpen = true; pendingPoem = null;
+    $('pm-title').textContent = label; $('pm-list').dataset.label = label; $('pm-list').dataset.meta = `${fmt(rows.length)} poem${rows.length === 1 ? '' : 's'}, newest first. Click one to read it.`;
+    $('pm-meta').textContent = `${fmt(rows.length)} poem${rows.length === 1 ? '' : 's'}, newest first. Click one to read it.`;
+    const box = $('pm-list'); box.replaceChildren();
+    rows.forEach(r => {
+      const b = document.createElement('button'); b.type = 'button';
+      const t = document.createElement('b'); t.style.fontWeight = '400'; t.textContent = r.title || 'Untitled';
+      const d = document.createElement('span'); d.textContent = r.iso || 'No date';
+      b.append(t, d); b.onclick = () => openPoem(r.id, true); box.append(b);
+    });
+    showView(true); $('pm-list').scrollTop = 0;
+    modal.hidden = false; $('pm-close').focus();
+  }
+  $('pm-back').addEventListener('click', () => { pendingPoem = null; showView(true); $('pm-title').textContent = $('pm-list').dataset.label || ''; $('pm-meta').textContent = $('pm-list').dataset.meta || ''; });
+  const PICK = window.__standalone ? (label, test) => (d) => showList(label(d), p => test(p, d)) : null;
+  async function openPoem(id, fromList) {
+    if (!fromList) { lastFocus = document.activeElement; listOpen = false; }
+    showView(false);
     pendingPoem = id;
     const row = findRow(id);
     modal.hidden = false;
@@ -904,7 +951,7 @@ dash.calc('highlights', {
       showPending();
     }
   }
-  function closePoem() { pendingPoem = null; modal.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+  function closePoem() { pendingPoem = null; listOpen = false; modal.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('.pz-link');
     if (a) { e.preventDefault(); openPoem(a.dataset.poem); }
@@ -921,16 +968,17 @@ dash.calc('highlights', {
     if ((r = state($('ch-years'), 'by_year'))) vbars($('ch-years'), r, 'year', 'poems', {
       labelW: 40, xLabel: v => String(v),
       color: d => (d.year >= 2019 && d.year <= 2021) ? dash.colors[0] : 'var(--cds-chart-muted)',
-      tipVal: d => `${fmt(d.poems)} poems · ${fmt(d.words)} words`
+      tipVal: d => `${fmt(d.poems)} poems · ${fmt(d.words)} words`,
+      onPick: PICK && PICK(d => `Poems written in ${d.year}`, (p, d) => p.year === d.year)
     });
-    if ((r = state($('ch-heat'), 'month_weekday'))) heat($('ch-heat'), r);
-    if ((r = state($('ch-countries'), 'countries'))) hbars($('ch-countries'), r, 'country', 'poems', { color: d => ctyColor(d.country), tipVal: d => `${fmt(d.poems)} poems` });
+    if ((r = state($('ch-heat'), 'month_weekday'))) heat($('ch-heat'), r, { onPick: PICK && PICK(d => `Poems written on ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.weekday]}s in ${['January','February','March','April','May','June','July','August','September','October','November','December'][d.month - 1]}`, (p, d) => p.month === d.month && p.weekday === d.weekday) });
+    if ((r = state($('ch-countries'), 'countries'))) hbars($('ch-countries'), r, 'country', 'poems', { color: d => ctyColor(d.country), tipVal: d => `${fmt(d.poems)} poems`, onPick: PICK && PICK(d => d.country === 'Unknown' ? 'Poems with an unknown location' : `Poems written in ${d.country}`, (p, d) => p.country === d.country) });
     if ((r = state($('ch-places'), 'place_tags'))) {
       legend($('lg-places'), COUNTRIES.filter(c => r.some(d => d.country === c)), ctyColor);
-      hbars($('ch-places'), r, 'place', 'poems', { color: d => ctyColor(d.country), extra: d => d.country, tipVal: d => `${fmt(d.poems)} poems tagged` });
+      hbars($('ch-places'), r, 'place', 'poems', { color: d => ctyColor(d.country), extra: d => d.country, tipVal: d => `${fmt(d.poems)} poems tagged`, onPick: PICK && PICK(d => `Poems tagged “${d.tag || d.place}”`, (p, d) => p.tags.includes(d.tag || d.place)) });
     } else $('lg-places').replaceChildren();
-    if ((r = state($('ch-country-years'), 'country_years'))) grid($('ch-country-years'), r, 'country', d => d.poems, { colKey: 'year', color: dash.colors[1], rowOrder: COUNTRIES, label: d => fmt(d.poems), tipVal: d => `${fmt(d.poems)} poems` });
-    if ((r = state($('ch-hours'), 'hours'))) vbars($('ch-hours'), r, 'hour', 'poems', { labelW: 30, xLabel: v => String(v).padStart(2, '0'), color: () => dash.colors[0], tipVal: d => `${fmt(d.poems)} poems from ${String(d.hour).padStart(2, '0')}:00 to ${String(d.hour).padStart(2, '0')}:59` });
+    if ((r = state($('ch-country-years'), 'country_years'))) grid($('ch-country-years'), r, 'country', d => d.poems, { colKey: 'year', color: dash.colors[1], rowOrder: COUNTRIES, label: d => fmt(d.poems), tipVal: d => `${fmt(d.poems)} poems`, onPick: PICK && PICK(d => `Poems written in ${d.country} in ${d.year}`, (p, d) => p.country === d.country && p.year === d.year) });
+    if ((r = state($('ch-hours'), 'hours'))) vbars($('ch-hours'), r, 'hour', 'poems', { labelW: 30, xLabel: v => String(v).padStart(2, '0'), color: () => dash.colors[0], tipVal: d => `${fmt(d.poems)} poems from ${String(d.hour).padStart(2, '0')}:00 to ${String(d.hour).padStart(2, '0')}:59`, onPick: PICK && PICK(d => `Poems written between ${String(d.hour).padStart(2, '0')}:00 and ${String(d.hour).padStart(2, '0')}:59`, (p, d) => p.hr === d.hour) });
     drawRamps();
     drawTable();
     drawRevisit();
@@ -938,11 +986,11 @@ dash.calc('highlights', {
     draw_collection();
     draw_unfinished();
     draw_poets();
-    if ((r = state($('ch-theme-eras'), 'theme_eras'))) grid($('ch-theme-eras'), r, 'theme', d => d.share, { color: dash.colors[0], label: d => d3.format('.0%')(d.share), tipVal: d => `${d3.format('.1%')(d.share)} of poems (${fmt(d.poems)} of ${fmt(d.total)})` });
+    if ((r = state($('ch-theme-eras'), 'theme_eras'))) grid($('ch-theme-eras'), r, 'theme', d => d.share, { color: dash.colors[0], label: d => d3.format('.0%')(d.share), tipVal: d => `${d3.format('.1%')(d.share)} of poems (${fmt(d.poems)} of ${fmt(d.total)})`, onPick: PICK && PICK(d => `Poems tagged “${d.theme}”, ${d.era}`, (p, d) => p.era === d.era && p.tags.includes(d.theme)) });
     if ((r = state($('ch-themes'), 'themes'))) {
       legend($('lg-themes'), FAMILIES, famColor);
       const top = r.slice().sort((a, b) => b.poems - a.poems).slice(0, 24);
-      hbars($('ch-themes'), top, 'theme', 'poems', { color: d => famColor(d.family), extra: d => d.family, tipVal: d => `${fmt(d.poems)} poems` });
+      hbars($('ch-themes'), top, 'theme', 'poems', { color: d => famColor(d.family), extra: d => d.family, tipVal: d => `${fmt(d.poems)} poems`, onPick: PICK && PICK(d => `Poems tagged “${d.theme}”`, (p, d) => p.tags.includes(d.theme)) });
     } else $('lg-themes').replaceChildren();
   });
 })();
