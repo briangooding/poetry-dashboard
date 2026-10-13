@@ -399,7 +399,7 @@ window.dash = {
 </script>
 <script>// Builds every dashboard dataset from raw poem rows, mirroring the SQL used in the Claude dashboard.
 function computeDatasets(rows, C, now = new Date()) {
-  const EXCLUDE = ['not-poetry', 'ignore'];
+  const EXCLUDE = ['not-poetry', 'not-poem', 'ignore'];
   const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const pad = (n) => String(n).padStart(2, '0');
