@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dragonfly Notebook Timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#eef1ec; --panel:#e3e8e2; --ink:#1c2420; --ink-2:#4a5650; --ink-3:#6f7b75; --rule:#c9d1ca;
+  --teal:#1d6a66; --amber:#9a5a17; --heat0:#e3e8e2; --heat1:#15524f;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#121816; --panel:#1b2320; --ink:#dde4df; --ink-2:#a9b5ae; --ink-3:#7f8b85; --rule:#2c3632;
+  --teal:#5cc0b6; --amber:#e0a25a; --heat0:#1b2320; --heat1:#6fd3c8; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#121816; --panel:#1b2320; --ink:#dde4df; --ink-2:#a9b5ae; --ink-3:#7f8b85; --rule:#2c3632;
+  --teal:#5cc0b6; --amber:#e0a25a; --heat0:#1b2320; --heat1:#6fd3c8; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.55;margin:0}
+.wrap{max-width:980px;margin:0 auto;padding-inline:20px;padding-block:48px 80px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(34px,6vw,60px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:26px;font-weight:700;margin-bottom:6px}
+h3{font-size:22px;font-weight:700}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--teal)}
+.lede{font-size:21px;max-width:62ch;color:var(--ink-2);margin:18px 0 0}
+.epi{margin:28px 0 0;font-style:italic;color:var(--ink-2);border-left:2px solid var(--amber);padding-left:16px;max-width:60ch}
+.foot{display:block;font-family:var(--f-mono);font-style:normal;font-size:12px;color:var(--ink-3);margin-top:4px}
+.facts{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:28px;font-family:var(--f-mono);font-size:13px;color:var(--ink-2)}
+.facts b{font-family:var(--f-display);font-size:22px;color:var(--ink);display:block;font-weight:700}
+section{margin-top:64px}
+.sub{color:var(--ink-2);max-width:66ch;margin:0 0 20px;font-size:17px}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 32px}
+.chart{min-width:0}
+.chart h4{font-family:var(--f-display);font-size:15px;margin:0 0 2px}
+.chart p{font-size:14px;color:var(--ink-3);margin:0 0 6px;font-family:var(--f-body)}
+svg text{font-family:var(--f-mono);fill:var(--ink-3);font-size:10px}
+.heatwrap{overflow-x:auto}
+table.heat{border-collapse:separate;border-spacing:2px;font-family:var(--f-mono);font-size:11px;min-width:720px}
+table.heat th{font-weight:400;color:var(--ink-3);text-align:left;padding:2px 6px;white-space:nowrap}
+table.heat th.q{text-align:center;writing-mode:vertical-rl;transform:rotate(180deg);height:62px;padding:2px}
+table.heat td{width:44px;height:26px;text-align:center;border-radius:3px;font-variant-numeric:tabular-nums;cursor:default}
+table.heat td:focus{outline:2px solid var(--amber)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--paper);font-family:var(--f-mono);font-size:12px;padding:6px 8px;border-radius:4px;max-width:260px;z-index:9}
+.eras{position:relative;margin-top:8px}
+.eras::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:3px;background:linear-gradient(var(--teal),var(--amber));border-radius:3px;opacity:.55}
+.era{position:relative;padding-left:44px;padding-block:22px;border-bottom:1px solid var(--rule)}
+.era:last-child{border-bottom:0}
+.era::before{content:"";position:absolute;left:4px;top:30px;width:17px;height:17px;border-radius:50%;background:var(--paper);border:3px solid var(--teal)}
+.era .when{font-family:var(--f-mono);font-size:13px;color:var(--teal)}
+.era h3{margin:4px 0 12px}
+.stats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chip{font-family:var(--f-mono);font-size:12px;background:var(--panel);color:var(--ink-2);padding:3px 8px;border-radius:3px;font-variant-numeric:tabular-nums}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.cols>div{min-width:0}
+.cols h5{font-family:var(--f-display);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:0 0 4px}
+.cols p{margin:0;font-size:17px}
+.quotes{display:grid;gap:14px;margin-top:18px}
+blockquote{margin:0;padding:10px 16px;background:var(--panel);border-radius:4px;font-style:italic;white-space:pre-line;font-size:17px;line-height:1.45}
+.through{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.through div{border-top:2px solid var(--amber);padding-top:10px;min-width:0}
+.through b{font-family:var(--f-display);display:block;margin-bottom:4px}
+.through p{margin:0;font-size:16px;color:var(--ink-2)}
+.method{font-size:15px;color:var(--ink-2);max-width:70ch}
+.method li{margin-bottom:6px}
+code{font-family:var(--f-mono);font-size:13px}
+@media (max-width:640px){.cols,.charts{grid-template-columns:1fr}.era{padding-left:36px}body{font-size:17px}}
+@media (prefers-reduced-motion:no-preference){.era{transition:background .2s}.era:hover{background:color-mix(in srgb,var(--panel) 40%,transparent)}}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+.gate{max-width:380px;margin:18vh auto 0;padding-inline:20px;font-family:var(--f-body)}
+.gate h1{font-size:32px;margin-bottom:14px}
+.gate input,.gate button{display:block;width:100%;font:16px var(--f-body);padding:10px 12px;margin-top:10px;border:1px solid var(--rule);border-radius:4px;background:var(--panel);color:var(--ink)}
+.gate button{background:var(--teal);color:var(--paper);border:0;cursor:pointer;font-family:var(--f-display);font-weight:700}
+.gate small,.gate p{color:var(--ink-3);font-size:14px}
+.stale{border-left:3px solid var(--amber);padding:8px 14px;margin-top:28px;font-size:15px;color:var(--ink-2);background:var(--panel)}
+.stale ul{margin:4px 0 0;padding-left:18px}
+.signout{font:12px var(--f-mono);background:none;border:0;color:var(--ink-3);text-decoration:underline;cursor:pointer;padding:0;margin-top:40px}
+</style>
+</head>
+<body>
+<div class="gate" id="gate" hidden>
+  <h1>Dragonfly timeline</h1>
+  <form id="gate-form">
+    <input name="email" type="email" placeholder="Email" autocomplete="email" required>
+    <input name="password" type="password" placeholder="Password (leave blank for an email link)" autocomplete="current-password">
+    <button type="submit">Sign in</button>
+  </form>
+  <p id="gate-msg" role="status"></p>
+</div>
+<div class="wrap" id="page" hidden>
+<header>
+  <div class="eyebrow">Dragonfly notebook · Dec 2018 to Mar 2022</div>
+  <h1>How the poems changed</h1>
+  <p class="lede">A poem a day for three and a quarter years. Read in order, the notebook moves through seven stretches: from long, argumentative winter essays in verse to short, plain notes written at home, with a loud midwinter relapse in 2021 in between.</p>
+  <p class="epi">we left in June / I can still remember the date / I have thousands of written pages / writings in redundant places<span class="foot" id="epi-foot"></span></p>
+  <div class="facts" id="facts"></div>
+  <div class="stale" id="stale" hidden><b>Some page text no longer matches the data:</b><ul></ul></div>
+</header>
+
+<section>
+  <h2>The shape of the writing, by quarter</h2>
+  <p class="sub">Each point is one calendar quarter. Shaded bands mark the seven stretches described below. Hover or tap a point for the value. The first quarter has only 11 poems and the last has 69, so their numbers are less steady.</p>
+  <div class="charts" id="charts"></div>
+</section>
+
+<section>
+  <h2>Themes, by quarter</h2>
+  <p class="sub">Share of that quarter's poems that use at least one word from each theme's word list. Darker means more poems. These are keyword counts, so treat them as a rough gauge that backs up the close reading rather than replaces it.</p>
+  <div class="heatwrap"><table class="heat" id="heat"></table></div>
+</section>
+
+<section>
+  <h2>Seven stretches</h2>
+  <p class="sub">Style and theme for each stretch, with short excerpts. Each excerpt carries the poem's own footer: number, date and time, and where it was written.</p>
+  <div class="eras" id="eras"></div>
+</section>
+
+<section>
+  <h2>What never changed</h2>
+  <div class="through">
+    <div><b>The migraine behind one eye</b><p>Named in every year, often with the exact side: "slightly behind and above my left eye" (Jan 2019), "explosion behind my right eye returns" (Jun 2020), "migraine, right eye" (Mar 2022).</p></div>
+    <div><b>Staring out windows</b><p>Second-story windows, north-facing windows, the east window. The window is the standing vantage point, and "out the window" shows up in every stretch.</p></div>
+    <div><b>The self-instruction</b><p>"keep moving forward", "try not to", "I'm trying". Present from 2019, it becomes the dominant voice in 2021 and 2022.</p></div>
+    <div><b>An unnamed "her"</b><p>Hair, voice, a glance across a coffee shop. The muse is rarely named, and when a name does appear it is often struck through or renounced.</p></div>
+    <div><b>Elsewhere</b><p>Taipei, Hangzhou, Bangkok, Rotterdam, Bremen, Berlin. Memories of other countries surface in every stretch as the counterweight to parking lots and strip malls.</p></div>
+    <div><b>Animals and deep time</b><p>Savanna, jungle, australopithecus, egrets, rattlesnakes. The body is repeatedly read as an old animal in the wrong habitat.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>How this was made</h2>
+  <ul class="method">
+    <li>Source: the <code>poems</code> table in the poetry database, collection <em>[2018-2019] - dragonfly notebook</em>, last synced <span id="m-sync"></span>. Only numbered poems count<span id="m-notes"></span>. The numbers come from the database function <code>analysis.page_data</code>.</li>
+    <li>Every poem was read in date order. The stretches and their descriptions come from that reading; the numbers support it, and every excerpt is checked against the database text each time the page is refreshed.</li>
+    <li>Dates come from the <code>written</code> field. Where it was empty or more than five days off the <code>created</code> date (<span id="m-fixed"></span> poems, for example <code>07.08.09</code> for 2019 or <code>04.22.22</code> for 2021), the created date was used.</li>
+    <li>Poem text is everything above the footer rule (a line of two or more dashes). Lines exclude blank spacer lines; stanzas are counted from blank-line breaks. "Tagged" means the poem's <code>tags</code> list is not empty.</li>
+    <li>Theme shares come from case-insensitive whole-word matching on the poem text, using the word lists in <code>analysis.themes</code>.</li>
+    <li>Many poems have been re-tagged in a later revisit, mostly adding place tags such as Texas. That is why the last quarter shows as almost fully tagged.</li>
+  </ul>
+</section>
+<button class="signout" id="signout" type="button">Sign out</button>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const SUPABASE_URL='https://jblxjixgkfsejzvmbxgb.supabase.co';
+const SUPABASE_KEY='sb_publishable_x2U2s3sp-bvpIM-xG1TTtA_TJv9eNDg';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const gate=document.getElementById('gate'), page=document.getElementById('page'), msg=document.getElementById('gate-msg');
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){gate.hidden=false;page.hidden=true;return}
+  gate.hidden=true;
+  const {data:r,error}=await sb.rpc('dragonfly_timeline');
+  if(error){gate.hidden=false;msg.textContent=error.code==='42501'?'This account cannot view the timeline.':'Could not load data: '+error.message;return}
+  page.hidden=false;
+  const stale=[...r.claims_failed.map(c=>c.claim),...r.quotes_missing.map(q=>'excerpt '+q+' no longer found')];
+  if(stale.length){const n=document.getElementById('stale');n.hidden=false;n.querySelector('ul').innerHTML=stale.map(s=>'<li>'+s.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</li>').join('')}
+  render(r.data);
+}
+document.getElementById('gate-form').addEventListener('submit',async e=>{
+  e.preventDefault();const email=e.target.email.value.trim(), pw=e.target.password.value;
+  msg.textContent='Signing in…';
+  if(pw){const {error}=await sb.auth.signInWithPassword({email,password:pw});if(error){msg.textContent=error.message;return}msg.textContent='';boot()}
+  else{const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split('#')[0],shouldCreateUser:false}});msg.textContent=error?error.message:'Check your email for a sign-in link.'}
+});
+document.getElementById('signout').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
+sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'&&page.hidden)boot()});
+let rendered=false;
+function render(DATA){
+if(rendered)return;rendered=true;
+const ERAS = [{"id":"essayist","name":"The essayist's notebook","when":"Dec 2018 to Mar 2019","quarters":["2018-Q4","2019-Q1"],"style":"The longest poems of the whole run, and almost all of them break into stanzas. Titles run long and mock-academic (\"the etiology of pre-modern disease (archaeological summary of the final age of the Anthropocene)\"). The diction is Latinate and argumentative (etiologically, atavistic, egalitarianism), and several poems are written as documents: a sheriff's deputy's notes, an interview transcript, a study abstract with a numbered list.","themes":"Settling into the Queen Anne house and walking San Antonio streets (Hackberry, Broadway, Olmos Basin); Texas and San-Antonio are the stretch's most-used tags. Unemployment. Social and political critique, which the tags call ideology, critique and enlivened-conscripts. The first migraines. Taipei and Hangzhou as memories held against a Texas winter.","quotes":[{"text":"there's a grammar to this anger\nprimed behavior not quite learned"},{"text":"delineating an age wholly rapt in anxiety\nhesitation in decision\nborne of\nexcessive choice polluting the galaxy"},{"text":"today at the house I fixed the windows\nsealed some cracks and tested hinges"}]},{"id":"confession","name":"Confession at the second-story window","when":"Apr to Sep 2019","quarters":["2019-Q2","2019-Q3"],"style":"The poems shrink and turn raw and first-person. The mock documents mostly disappear and the notebook reads as a diary. Profanity arrives (\"—FUCK / I'm so tired\"), and repetition is used as a scream: \"I'm trying\" three times in a row, then eight lines of \"there is no reason\".","themes":"Anhedonia and purposelessness; frustration and purpose are the top tags. A manuscript rejection, an unanswered job application, nightmares, pulling out eyebrows and beard, people living on the street seen from the car. Road trips to Jasper, Louisiana, Waco, Brownsville and Illinois. A move (\"new address again\") after which the footers shift from Queen Anne to 1007 Ct. and the Roots coffee shop.","quotes":[{"text":"where is the joy in the spontaneity of experience\nof living among others"},{"text":"anhedonic day, bad news about manuscript\nfelt relieved or slightly better somehow\nmaybe just no longer hoping"},{"text":"two hundred days in\nis the effort for purpose\na cloud spitting its way back to earth"}]},{"id":"muse","name":"Winter light and an unnamed muse","when":"Oct 2019 to Mar 2020","quarters":["2019-Q4","2020-Q1"],"style":"Fewer stanza breaks, and a more painterly eye: angles of light, November mornings, ambient sound, \"Edward Hopper ambiance\". Words of calm and breath climb to about one poem in five, up from about one in eight in the spring. The craft becomes visible too: links to em-dash usage guides are pasted into two poems (12.19.19 and 01.31.20).","themes":"Infatuation peaks; the tag an-unnamed-person appears 15 times in Oct to Dec 2019, and Sarah's name first appears struck through (10.15.19). A December trip to San Diego. Dreams and a quiet holiday alone. In March 2020 the mood drops sharply, with the poems' darkest thoughts of not wanting to live, as the pandemic begins.","quotes":[{"text":"Edward Hopper ambiance, [blurs into this] November morning\nlulling routine of cloudy awareness"},{"text":"I'm more drawn\nto learning your name\nthan to any aspiration"},{"text":"trip down wild atmosphere\neerie gloom upon us and\nI just feel more restless"}]},{"id":"pandemic","name":"Pandemic patio","when":"Apr to Dec 2020","quarters":["2020-Q2","2020-Q3","2020-Q4"],"style":"The leanest stretch: the fewest lines per poem, and only about a third of poems break into stanzas. Revision marks (brackets, strike-throughs, ???) fall by half. Tagging starts to lapse. Many poems are four to six short lines of observation from the same seat at Roots or its parking lot.","themes":"Unemployment, and the pandemic as background boredom (\"various responses to a boring plague\"). A May road trip through the Panhandle and Wichita Falls. The savanna and the jungle become an inner landscape. Nature words nearly double in summer. In autumn and winter the seasons take over, along with Molly the dog and memories of Wageningen, Bremen and Taipei. The notebook's namesake appears in a Shanghai alley.","quotes":[{"text":"I filed for unemployment this morning\n[same day] and somebody insisted I was a poet"},{"text":"this entire pandemic (and before) there's been a dime sitting in the corner against the wall and the bar"},{"text":"I see a creature on the lotus\nblack then white then black\nflooding over me, a familiar face\nthe dragonfly"}]},{"id":"outpouring","name":"The winter outpouring","when":"Jan to Mar 2021","quarters":["2021-Q1"],"style":"An abrupt reversal. Poems lengthen to the levels of early 2019, two-thirds break into stanzas again, and several run past 15 lines: the funeral elegy \"swamp and forest\" and the 32-line invective \"roots grown over a statue's feet\", the longest poem in the notebook. Sentences get longer and narrate whole scenes. Profanity is back at its highest rate.","themes":"Panic attacks named outright, insomnia \"from the hours of 02:00 to 04:00\", a clonazepam prescription, the February 2021 freeze (a run of snow poems, 02.14 to 02.18; weather words reach their high for the notebook), and writing to Sarah against one's own advice. Self-instruction peaks here too. The stretch closes on a turn: \"I let go / of 35 years\".","quotes":[{"text":"I wrote her anyway\nI tried not to and failed\nand I will try not to and fail again"},{"text":"I tried to play a violin with warped strings\nat your funeral today"},{"text":"I let go\nof 35 years\nsoaked in humiliation"}]},{"id":"mantras","name":"Mantras and the savanna","when":"Apr to Sep 2021","quarters":["2021-Q2","2021-Q3"],"style":"Back to short poems, and the lines themselves get shorter. A new register settles in: instructions to the self, in the language of therapy and meditation. Self-coaching words stay high through the spring, then fall away in the summer heat.","themes":"Isolation words reach their highest of any full quarter, along with anhedonia and a new writing spot at a Starbucks on Martin. Then summer: nature at its highest, with bald cypress, egrets, cicadas, and a zebra and lion on an imagined savanna. Violence words climb back to their 2020 high in the same heat. Poem 1000 lands on 09.26.21.","quotes":[{"text":"I can practice being confident and\naware in a more valuable experiential\nand less perfectionistic and rigid way"},{"text":"think about a zebra being chased\nby a lion on the savanna\nwordless interpretation"},{"text":"may all violent endings\nenter the calm transcendence and clarity\nof morning"}]},{"id":"home","name":"Brief poems from home","when":"Oct 2021 to Mar 2022","quarters":["2021-Q4","2022-Q1"],"style":"The plainest writing in the notebook: the shortest lines and the fewest stanza breaks and revision marks. Nearly everything is written at home (1007 Ct.). Tagging dips in late 2021; the 2022 poems were later fully tagged in a revisit pass, nearly all with Texas, and brief becomes more common than anywhere else in the notebook.","themes":"Posture and the body as a daily project; body words reach their high in early 2022. Memory words at their highest of any full quarter in late 2021: Berlin, a Rotterdam winter, a silk market \"seven thousand miles away\". Renouncing a name, and addressing oneself by name. The notebook ends where its title points, on a dragonfly (Epitheca, the baskettail) basking before the trees flower.","quotes":[{"text":"this isn't about—I'll never write your name again"},{"text":"I'm waiting\nfor something—unnecessary\nlet go, Brian"},{"text":"six legs hanging down\nbrown on brown\nbefore the trees flower\nEpitheca basking"}]}];
+const Q = DATA.quarters;
+const ERA_STATS = Object.fromEntries(DATA.eras.map(e=>[e.era_id,e]));
+const QUOTE = {}; DATA.quotes.forEach(q=>{QUOTE[q.era_id+'/'+q.ord]=q});
+const fmt=n=>n.toLocaleString('en-US');
+const footOf=q=>q?`${q.num} · ${q.era_id==='epigraph'?'':q.title+' · '}${q.footer||''}`:'';
+document.getElementById('epi-foot').textContent=footOf(QUOTE['epigraph/1']);
+document.getElementById('facts').innerHTML=[[fmt(DATA.poems),'poems read'],[Q.length,'quarters'],[ERAS.length,'stretches'],
+  [Math.round(Q[0].avg_words)+' → '+Math.round(Q[Q.length-1].avg_words),'words per poem, first vs last quarter']]
+  .map(([b,l])=>`<div><b>${b}</b>${l}</div>`).join('');
+document.getElementById('m-sync').textContent=new Date(DATA.last_synced||DATA.generated_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+document.getElementById('m-notes').textContent=DATA.excluded_notes?`; ${DATA.excluded_notes} working note${DATA.excluded_notes>1?'s are':' is'} left out`:'';
+DATA.eras.forEach((s,i,a)=>{s.range_start=(i&&s.first_num<=a[i-1].last_num)?a[i-1].last_num+1:s.first_num});
+document.getElementById('m-fixed').textContent=DATA.date_fixed;
+ERAS.forEach(e=>{e.quarters=[...new Set(Q.filter(r=>{const s=ERA_STATS[e.id];return s&&r.quarter>=qOf(s.first_date)&&r.quarter<=qOf(s.last_date)}).map(r=>r.quarter))]});
+function qOf(d){const y=d.slice(0,4),m=+d.slice(5,7);return y+'-Q'+Math.ceil(m/3)}
+const tip=document.getElementById('tip');
+function showTip(e,html){tip.innerHTML=html;tip.hidden=false;const x=Math.min(e.clientX+12,innerWidth-270);tip.style.left=x+'px';tip.style.top=(e.clientY+14)+'px'}
+function hideTip(){tip.hidden=true}
+const qIndex=q=>Q.findIndex(r=>r.quarter===q);
+const charts=[
+ {k:'avg_lines',t:'Lines per poem',d:'Average lines in a poem.',f:v=>v.toFixed(1)},
+ {k:'avg_words_per_line',t:'Words per line',d:'Lines get shorter after mid-2021.',f:v=>v.toFixed(2)},
+ {k:'multi_stanza_pct',t:'Poems with stanza breaks',d:'Share of poems in two or more stanzas.',f:v=>v.toFixed(0)+'%',max:100},
+ {k:'tagged_pct',t:'Poems given tags',d:'Share of poems with tags. Later re-tagging passes lift 2021 and 2022.',f:v=>v.toFixed(0)+'%',max:100},
+];
+const NS='http://www.w3.org/2000/svg';
+function el(n,a){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
+const host=document.getElementById('charts');
+charts.forEach(c=>{
+  const W=320,H=170,L=34,R=10,T=10,B=30;
+  const vals=Q.map(r=>r[c.k]);
+  const lo=c.max?0:Math.floor(Math.min(...vals)*0.85), hi=c.max||Math.ceil(Math.max(...vals)*1.08);
+  const x=i=>L+i*(W-L-R)/(Q.length-1), y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  const box=document.createElement('div');box.className='chart';
+  box.innerHTML=`<h4>${c.t}</h4><p>${c.d}</p>`;
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',role:'img','aria-label':c.t+' by quarter'});
+  ERAS.forEach((e,j)=>{const a=qIndex(e.quarters[0]),b=qIndex(e.quarters[e.quarters.length-1]);
+    const x0=a===0?L:(x(a)+x(a-1))/2, x1=b===Q.length-1?W-R:(x(b)+x(b+1))/2;
+    if(j%2===0)s.appendChild(el('rect',{x:x0,y:T,width:x1-x0,height:H-T-B,fill:'var(--panel)'}));});
+  [lo,(lo+hi)/2,hi].forEach(v=>{s.appendChild(el('line',{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:'var(--rule)','stroke-width':1}));
+    const t=el('text',{x:L-5,y:y(v)+3,'text-anchor':'end'});t.textContent=c.max?v+'%':(+v.toFixed(1));s.appendChild(t)});
+  ['2019','2020','2021','2022'].forEach(yr=>{const i=qIndex(yr+'-Q1');const t=el('text',{x:x(i),y:H-10,'text-anchor':'middle'});t.textContent=yr;s.appendChild(t)});
+  s.appendChild(el('polyline',{points:vals.map((v,i)=>x(i)+','+y(v)).join(' '),fill:'none',stroke:'var(--teal)','stroke-width':2,'stroke-linejoin':'round'}));
+  vals.forEach((v,i)=>{
+    s.appendChild(el('circle',{cx:x(i),cy:y(v),r:3.5,fill:'var(--teal)',stroke:'var(--paper)','stroke-width':1.5}));
+    const hit=el('rect',{x:x(i)-11,y:T,width:22,height:H-T-B,fill:'transparent'});
+    const h=`${Q[i].quarter} · ${Q[i].poems} poems<br>${c.t}: ${c.f(v)}`;
+    hit.addEventListener('pointermove',e=>showTip(e,h));hit.addEventListener('pointerleave',hideTip);
+    s.appendChild(hit)});
+  box.appendChild(s);host.appendChild(box);
+});
+const THEME_ORDER=['body & migraine','isolation & loneliness','desire & longing','nature & landscape','seasons & weather','Asia & Europe memories','science diction','violence & death','anger & frustration','anxiety & panic','calm & breath','self-coaching','city & built world','memory & nostalgia'];
+const themes=[...THEME_ORDER.filter(t=>t in Q[0].themes),...Object.keys(Q[0].themes).filter(t=>!THEME_ORDER.includes(t))];
+const tb=document.getElementById('heat');
+let hdr='<tr><th></th>'+Q.map(r=>`<th class="q">${r.quarter}</th>`).join('')+'</tr>';
+const maxV=Math.max(...Q.flatMap(r=>Object.values(r.themes)));
+const rows=themes.map(t=>'<tr><th>'+t+'</th>'+Q.map(r=>{const v=r.themes[t];const p=Math.round(100*Math.min(1,v/maxV));
+  const ink=p>55?'var(--paper)':'var(--ink-2)';
+  return `<td tabindex="0" data-tip="${r.quarter} · ${t}: ${v}% of ${r.poems} poems" style="background:color-mix(in srgb,var(--heat1) ${p}%,var(--heat0));color:${ink}">${Math.round(v)}</td>`}).join('')+'</tr>').join('');
+tb.innerHTML=hdr+rows;
+tb.querySelectorAll('td').forEach(td=>{td.addEventListener('pointermove',e=>showTip(e,td.dataset.tip));td.addEventListener('pointerleave',hideTip)});
+const eh=document.getElementById('eras');
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+eh.innerHTML=ERAS.map(e=>`<article class="era" id="${e.id}">
+  <div class="when">${e.when} · poems ${ERA_STATS[e.id].range_start}–${ERA_STATS[e.id].last_num}</div>
+  <h3>${e.name}</h3>
+  <div class="stats">${(s=>[s.poems+' poems',s.lines.toFixed(1)+' lines',s.wpl.toFixed(1)+' words/line',s.words+' words',s.stanza_pct+'% stanza breaks'].map(x=>`<span class="chip">${x}</span>`).join(''))(ERA_STATS[e.id])}</div>
+  <div class="cols"><div><h5>Style</h5><p>${e.style}</p></div><div><h5>Themes</h5><p>${e.themes}</p></div></div>
+  <div class="quotes">${e.quotes.map((q,i)=>`<blockquote>${esc(q.text)}<span class="foot">${esc(footOf(QUOTE[e.id+'/'+(i+1)]))}</span></blockquote>`).join('')}</div>
+</article>`).join('');
+
+}
+boot();
+</script>
+
+</body>
+</html>
