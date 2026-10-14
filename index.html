@@ -92,7 +92,21 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 .pz-table th[aria-sort=descending] button::after { content: " ↓"; color: var(--color-fg-muted); }
 .pz-table td { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
 .pz-table td.muted { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
-@media (max-width: 560px) { .pz-table .hide-narrow { display: none; } }
+/* One line per row: fixed columns, long values end in … and show in full on hover. */
+.pz-table { table-layout: fixed; }
+.pz-table th button, .pz-table td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pz-table th[data-field=title] { width: 34%; }
+.pz-table th[data-field=written] { width: 7.5rem; }
+.pz-table th[data-field=filed_in] { width: 28%; }
+.pz-table th[data-field=reason] { width: 11.5rem; }
+.pz-table td[colspan] { white-space: normal; }
+@media (max-width: 900px) { .pz-table .hide-mid { display: none; } .pz-table th[data-field=title] { width: 50%; } }
+@media (max-width: 560px) {
+  .pz-table .hide-narrow { display: none; }
+  .pz-table th[data-field=title] { width: auto; }
+  .pz-table th[data-field=written] { width: 7rem; }
+  .pz-table th[data-field=reason] { width: 8.5rem; }
+}
 .pz-fail { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: inherit; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
 .pz-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
 .pz [data-dash-source-state=empty] { color: transparent; }
@@ -193,7 +207,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
           <thead><tr>
             <th data-field="title"><button type="button" data-k="title">Title</button></th>
             <th data-field="written"><button type="button" data-k="written">Written</button></th>
-            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+            <th data-field="filed_in" class="hide-narrow hide-mid"><button type="button" data-k="filed_in">Collection or notebook</button></th>
             <th data-field="reason"><button type="button" data-k="reason">Why unknown</button></th>
           </tr></thead>
           <tbody></tbody>
@@ -272,8 +286,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
           <thead><tr>
             <th data-field="title"><button type="button" data-k="title">Title</button></th>
             <th data-field="written"><button type="button" data-k="written">Written</button></th>
-            <th data-field="location"><button type="button" data-k="location">Location</button></th>
-            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+            <th data-field="location" class="hide-narrow"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow hide-mid"><button type="button" data-k="filed_in">Collection or notebook</button></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -291,8 +305,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
           <thead><tr>
             <th data-field="title"><button type="button" data-k="title">Title</button></th>
             <th data-field="written"><button type="button" data-k="written">Written</button></th>
-            <th data-field="location"><button type="button" data-k="location">Location</button></th>
-            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+            <th data-field="location" class="hide-narrow"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow hide-mid"><button type="button" data-k="filed_in">Collection or notebook</button></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -310,8 +324,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
           <thead><tr>
             <th data-field="title"><button type="button" data-k="title">Title</button></th>
             <th data-field="written"><button type="button" data-k="written">Written</button></th>
-            <th data-field="location"><button type="button" data-k="location">Location</button></th>
-            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+            <th data-field="location" class="hide-narrow"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow hide-mid"><button type="button" data-k="filed_in">Collection or notebook</button></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -329,8 +343,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
           <thead><tr>
             <th data-field="title"><button type="button" data-k="title">Title</button></th>
             <th data-field="written"><button type="button" data-k="written">Written</button></th>
-            <th data-field="location"><button type="button" data-k="location">Location</button></th>
-            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+            <th data-field="location" class="hide-narrow"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow hide-mid"><button type="button" data-k="filed_in">Collection or notebook</button></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -348,8 +362,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
           <thead><tr>
             <th data-field="title"><button type="button" data-k="title">Title</button></th>
             <th data-field="written"><button type="button" data-k="written">Written</button></th>
-            <th data-field="location"><button type="button" data-k="location">Location</button></th>
-            <th data-field="filed_in" class="hide-narrow"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+            <th data-field="location" class="hide-narrow"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow hide-mid"><button type="button" data-k="filed_in">Collection or notebook</button></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -778,6 +792,8 @@ dash.calc('highlights', {
   }
 
   // Appendix tables: search + sort
+  // "Yongkang Park (Note from No. 6 …), Taipei, Taiwan" -> "Yongkang Park, Taipei, Taiwan"
+  const shortPlace = (v) => v.replace(/\s*\([^)]*\)/g, '').replace(/^Note from\s+/i, '').replace(/\s+,/g, ',').trim() || v;
   function makeTable(cfg) {
     const st = { key: 'written', dir: 1, q: '' };
     const qEl = $(cfg.q);
@@ -818,7 +834,8 @@ dash.calc('highlights', {
           if (k === 'title') {
             const a = document.createElement('a'); a.href = '#'; a.className = 'pz-link'; a.dataset.poem = String(r.id);
             a.textContent = v || empty; td.appendChild(a);
-          } else td.textContent = v || empty;
+          } else td.textContent = (k === 'location' && v ? shortPlace(v) : v) || empty;
+          if (v) td.title = v;
           const c = (cls || '') + (v ? '' : ' muted');
           if (c.trim()) td.className = c.trim();
           tr.appendChild(td);
@@ -840,17 +857,17 @@ dash.calc('highlights', {
     return draw;
   }
   const drawTable = makeTable({ source: 'unlocated', table: 'tbl-unlocated', q: 'unloc-q', cnt: 'unloc-cnt', total: 'unloc-total',
-    cols: [['title', 'Untitled'], ['written', 'No date'], ['filed_in', '—', 'muted hide-narrow'], ['reason', '', 'muted']] });
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['filed_in', '—', 'muted hide-narrow hide-mid'], ['reason', '', 'muted']] });
   const drawRevisit = makeTable({ source: 'revisit', table: 'tbl-revisit', q: 'rev-q', cnt: 'rev-cnt', total: 'rev-total',
-    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
   const drawBrief = makeTable({ source: 'brief', table: 'tbl-brief', q: 'brf-q', cnt: 'brf-cnt', total: 'brf-total',
-    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
   const draw_collection = makeTable({ source: 'collection', table: 'tbl-collection', q: 'coll-q', cnt: 'coll-cnt', total: 'coll-total', empty: 'No poems have the "collection" tag yet.',
-    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
   const draw_unfinished = makeTable({ source: 'unfinished', table: 'tbl-unfinished', q: 'unf-q', cnt: 'unf-cnt', total: 'unf-total', empty: 'No poems have the "not-finished" tag yet.',
-    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
   const draw_poets = makeTable({ source: 'poets', table: 'tbl-poets', q: 'pts-q', cnt: 'pts-cnt', total: 'pts-total', empty: 'No poems have the "referencing-poets" tag yet.',
-    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown'], ['filed_in', '—', 'muted hide-narrow']] });
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
 
   function drawPoemCard(pre) {
     const box = $(pre);
