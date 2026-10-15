@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Themes by quarter</title>
+<style>
+:root {
+  --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-anthropic-serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --color-bg: #f7f6f2; --color-panel: #ffffff; --color-fg: #1f1e1b; --color-fg-muted: #6b6860;
+  --color-border-line: #e3e0d8; --color-bad: #c0392b; --cds-border: #d9d5cc;
+  --cds-chart-axis: #c9c5bb; --cds-chart-grid: #ebe8e1; --cds-chart-muted: #c4c0b6;
+  --cds-surface-popover: #ffffff; --cds-text-secondary: #6b6860; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12);
+  --skel: #ece9e2;
+  --cds-font-size-caption: 12px; --cds-font-size-body: 14px; --cds-font-size-heading: 16px; --cds-font-size-title: 28px;
+  --cds-font-weight-medium: 600;
+  --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 16px; --cds-gap-xl: 32px;
+  --cds-pad-xs: 6px; --cds-pad-sm: 10px; --cds-pad-md: 14px; --cds-pad-lg: 20px;
+  --cds-radius: 10px; --cds-dur-slow: .4s;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1b1a18; --color-panel: #24231f; --color-fg: #ecebe6; --color-fg-muted: #a39f95;
+    --color-border-line: #36342f; --cds-border: #3d3b35; --cds-chart-axis: #4a4741; --cds-chart-grid: #2f2d29;
+    --cds-chart-muted: #5a5750; --cds-surface-popover: #2c2b27; --cds-text-secondary: #a39f95; --skel: #2f2d29;
+    --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.5); color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+.dash-skeleton { color: transparent !important; background: var(--skel); border-radius: 6px; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .55; } }
+.topbar { display: flex; justify-content: flex-end; align-items: center; gap: 12px; font-size: 12px; color: var(--color-fg-muted); margin-bottom: 8px; flex-wrap: wrap; }
+.topbar a { color: var(--color-fg-muted); margin-right: auto; }
+.topbar a:hover { color: var(--color-fg); }
+.btn { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); cursor: pointer; }
+.btn.primary { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
+.btn:disabled { opacity: .6; cursor: default; }
+#auth { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+#auth form { width: 100%; max-width: 340px; background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+#auth h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 26px; margin: 0 0 4px; }
+#auth p { margin: 0 0 8px; font-size: 13px; color: var(--color-fg-muted); line-height: 1.45; }
+#auth label { font-size: 12px; color: var(--color-fg-muted); display: flex; flex-direction: column; gap: 4px; }
+#auth input { font: inherit; font-size: 15px; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--color-border-line); background: var(--color-bg); color: var(--color-fg); }
+#auth .err { color: var(--color-bad); font-size: 13px; min-height: 1em; }
+#auth .ok { color: var(--color-fg); font-size: 13px; line-height: 1.45; }
+#auth .alt { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+#auth .linkbtn { all: unset; cursor: pointer; font-size: 13px; color: var(--color-fg-muted); text-decoration: underline; text-underline-offset: 3px; }
+#auth .linkbtn:hover, #auth .linkbtn:focus-visible { color: var(--color-fg); }
+.load-err { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 10px; padding: 16px; color: var(--color-bad); margin-bottom: 16px; }
+.topbar .nav { margin-right: auto; display: flex; gap: 14px; flex-wrap: wrap; }
+.topbar .nav a { margin-right: 0; }
+[hidden] { display: none !important; }
+
+
+h1.title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 4px 0 6px; }
+.lede { color: var(--color-fg-muted); font-size: 14px; line-height: 1.5; margin: 0 0 var(--cds-gap-md); max-width: 70ch; }
+.card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); margin-bottom: var(--cds-gap-md); }
+.card h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 4px; }
+.card .note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-sm); line-height: 1.45; }
+.filters { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-md); align-items: end; margin-bottom: var(--cds-gap-md); }
+.filters label { display: flex; flex-direction: column; gap: 4px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.filters select { font: inherit; font-size: 14px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); }
+.kpi { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md) var(--cds-pad-lg); }
+.kpi .k { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.kpi .v { font-size: 22px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi .s { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: 2px; }
+.ramp { display: flex; align-items: center; gap: 6px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: var(--cds-gap-sm); flex-wrap: wrap; }
+.ramp i { display: inline-block; width: 18px; height: 10px; border-radius: 2px; }
+.ramp .thin { opacity: .35; }
+.hm { display: flex; align-items: flex-start; }
+.hm > svg { flex: none; }
+.scroller { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+.scroller svg { display: block; }
+svg text { font-size: 11px; fill: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+svg text.lab { fill: var(--color-fg); font-size: 12px; }
+.cell { cursor: pointer; }
+.cell.sel { stroke: var(--color-fg); stroke-width: 1.5px; }
+.tip { position: fixed; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: 8px; box-shadow: var(--cds-shadow-popover); padding: 6px 10px; font-size: 12px; white-space: nowrap; opacity: 0; z-index: 5; }
+.tip .k { color: var(--cds-text-secondary); }
+.detail-empty { color: var(--color-fg-muted); font-size: 13px; }
+.plist { border-top: 1px solid var(--color-border-line); max-height: 360px; overflow: auto; }
+.plist details { border-bottom: 1px solid var(--color-border-line); }
+.plist summary { display: flex; justify-content: space-between; gap: 16px; padding: 7px 2px; cursor: pointer; font-size: 14px; list-style: none; }
+.plist summary::-webkit-details-marker { display: none; }
+.plist summary span { color: var(--color-fg-muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.plist pre { white-space: pre-wrap; font-family: var(--font-anthropic-serif); font-size: 15px; line-height: 1.55; margin: 4px 2px 14px; }
+table.t { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; table-layout: fixed; }
+table.t th, table.t td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+table.t th { font-weight: var(--cds-font-weight-medium); }
+table.t td.n, table.t th.n { text-align: right; }
+table.t td.m { color: var(--color-fg-muted); font-size: 12px; }
+@media (max-width: 640px) { table.t .hide-narrow, table.t td.n .m { display: none; } table.t th, table.t td { padding: 6px 6px; } }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head>
+<body>
+<div id="auth" hidden>
+  <form id="login" autocomplete="on">
+    <h1>Themes by quarter</h1>
+    <p>Sign in with your Supabase account for the poetry project.</p>
+    <label>Email<input id="email" type="email" autocomplete="username" required></label>
+    <label>Password<input id="password" type="password" autocomplete="current-password"></label>
+    <div class="err" id="login-err" role="alert"></div>
+    <div class="ok" id="login-ok" role="status"></div>
+    <button class="btn primary" id="login-btn" type="submit">Sign in</button>
+    <div class="alt"><button type="button" class="linkbtn" id="magic-btn">Email me a sign-in link</button><button type="button" class="linkbtn" id="forgot-btn">Forgot password?</button><a class="linkbtn" href="index.html">Statistics</a></div>
+  </form>
+  <form id="reset" hidden>
+    <h1>Set a new password</h1>
+    <p>Choose a password for this dashboard. You'll use it with your email next time.</p>
+    <label>New password<input id="new-password" type="password" autocomplete="new-password" minlength="8" required></label>
+    <div class="err" id="reset-err" role="alert"></div>
+    <button class="btn primary" id="reset-btn" type="submit">Save password and open dashboard</button>
+  </form>
+</div>
+<div id="app" hidden>
+  <div class="wrap">
+    <div class="topbar"><span class="nav"><a href="index.html">Statistics</a><a href="inspiration.html">Inspiration map</a></span><span id="stamp"></span><span id="who"></span><button class="btn" id="refresh" type="button">Refresh</button><button class="btn" id="logout" type="button">Sign out</button></div>
+    <div class="load-err" id="load-err" hidden></div>
+
+<h1 class="title">Themes by quarter</h1>
+<p class="lede">How often each theme tag appears in the poems of every quarter, from the first dated poem to the latest. Each cell is the share of that quarter's poems carrying the tag, so busy and quiet quarters compare fairly. Click a cell to list its poems.</p>
+<div class="filters">
+  <label>Themes<select id="f-group"></select></label>
+  <label>Order<select id="f-sort"><option value="share">Most common first</option><option value="alpha">A to Z</option><option value="peak">By when they peaked</option></select></label>
+  <label>Fade quarters with fewer than<select id="f-min"><option value="1">1 poem</option><option value="5" selected>5 poems</option><option value="10">10 poems</option></select></label>
+</div>
+<div class="kpis" id="kpis"></div>
+<div class="card">
+  <h2>Share of each quarter's poems, by theme</h2>
+  <p class="note" id="hm-note">Top bar: poems written that quarter. Faded cells come from quarters with few poems, where one poem swings the share a lot.</p>
+  <div class="ramp" id="ramp"></div>
+  <div class="hm" id="hm-wrap"><div class="dash-skeleton" style="height:420px;flex:1"></div></div>
+</div>
+<div class="card" id="detail">
+  <h2 id="d-title">Poems in a quarter</h2>
+  <p class="note" id="d-note">Click any cell above to list the poems behind it. Click a title to read it.</p>
+  <div class="plist" id="d-list"></div>
+</div>
+<div class="card">
+  <h2>Theme summary</h2>
+  <p class="note">Peak quarter counts only quarters with at least the number of poems chosen above.</p>
+  <div style="overflow-x:auto"><table class="t" id="sum"><thead><tr>
+    <th style="width:28%">Theme</th><th class="n" style="width:14%">Overall</th><th style="width:20%">Peak quarter</th><th class="n" style="width:16%">Peak share</th><th class="n hide-narrow" style="width:22%">Latest quarter</th>
+  </tr></thead><tbody></tbody></table></div>
+</div>
+<div class="tip" id="tip"></div>
+
+  </div>
+</div>
+<script>
+const COLORS = matchMedia('(prefers-color-scheme: dark)').matches
+  ? ['#6ea8e0', '#e39a5b', '#5fbf8d', '#d9789b', '#a88be0', '#c9b25a', '#56c1cc', '#e07f62']
+  : ['#2f6fb0', '#c96f22', '#2f8f5f', '#b5466e', '#7356b0', '#8f7a1f', '#1f8f9b', '#c0573a'];
+window.__standalone = true;
+window.dash = {
+  colors: COLORS, _status: 'loading', _data: {}, _calcs: {}, _cbs: [],
+  loader() {}, calc(name, cfg) { this._calcs[name] = cfg; },
+  data(id) {
+    if (this._status !== 'ok') return { status: this._status };
+    return { status: 'ok', data: this._data[id] || [] };
+  },
+  onData(cb) { this._cbs.push(cb); try { cb(); } catch (e) { console.error(e); } },
+  _emit() { this._cbs.forEach(cb => { try { cb(); } catch (e) { console.error(e); } }); },
+  _set(ds) {
+    this._data = ds;
+    for (const [name, cfg] of Object.entries(this._calcs)) {
+      try { ds[name] = cfg.fn(...cfg.inputs.map(i => ds[i] || [])); } catch (e) { console.error(name, e); ds[name] = []; }
+    }
+    this._status = 'ok'; this._emit();
+  },
+  _loading() { this._status = 'loading'; this._emit(); },
+  _error() { this._status = 'error'; this._emit(); },
+};
+</script>
+<script>// Builds every dashboard dataset from raw poem rows, mirroring the SQL used in the Claude dashboard.
+function computeDatasets(rows, C, now = new Date()) {
+  const EXCLUDE = ['not-poetry', 'not-poem', 'ignore'];
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const pad = (n) => String(n).padStart(2, '0');
+  const iso = (d) => d ? `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}` : null;
+  const longDate = (d) => d ? `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}` : null;
+  const re = (s) => new RegExp(s, 'i');
+  const R = { TW: re(C.TW), VN: re(C.VN), TH: re(C.TH), HK: re('Hong Kong|Kowloon|Macau'), CN: re(C.CN), NL: re(C.NL), DE: re(C.DE), TR: re('Incheon'), US: re(C.US) };
+
+  function parseDate(sf) {
+    const m = /(\d{2})\.(\d{2})\.(\d{2})(?:\s|\.md|\)|$)/.exec(sf || '');
+    if (!m) return null;
+    const mo = +m[1], dd = +m[2], yy = +m[3];
+    const y = yy < 70 ? 2000 + yy : 1900 + yy; // Postgres 'YY' rule
+    if (mo < 1 || mo > 12 || dd < 1 || dd > 31) return null;
+    const d = new Date(Date.UTC(y, mo - 1, dd));
+    return d.getUTCMonth() === mo - 1 ? d : null;
+  }
+  function country(p) {
+    const loc = p.loc, nb = p.notebook;
+    if (loc != null) {
+      if (R.TW.test(loc)) return 'Taiwan';
+      if (R.VN.test(loc)) return 'Vietnam';
+      if (R.TH.test(loc)) return 'Thailand';
+      if (R.HK.test(loc)) return 'Hong Kong';
+      if (R.CN.test(loc)) return 'China';
+      if (R.NL.test(loc)) return 'Netherlands';
+      if (R.DE.test(loc)) return 'Germany';
+      if (R.TR.test(loc)) return 'In transit';
+    }
+    if (nb === '[2025] - Taiwan') return 'Taiwan';
+    if (nb === '[2025] - Vietnam') return 'Vietnam';
+    if (nb === '[2025] - Thailand' || nb === '[2026] - Mae Rim - Krabi') return 'Thailand';
+    if (p.collection === '[2011] - China' && p.d && p.d.getUTCFullYear() === 2011) return 'China';
+    if (loc != null && R.US.test(loc)) return 'USA';
+    if (nb === '[2025] - USA pre' || nb === '[2025] - USA return') return 'USA';
+    return 'Unknown';
+  }
+
+  const poems = rows.filter(r => !(r.tags || []).some(t => EXCLUDE.includes(t))).map(r => {
+    const sf = r.source_file || '';
+    const d0 = parseDate(sf);
+    const hrM = /\d{2}\.\d{2}\.\d{2}\s+(\d{2})\.?\d{2}/.exec(sf);
+    const hmM = /\d{2}\.\d{2}\.\d{2}\s+(\d{2}\.?\d{2})/.exec(sf);
+    const locM = r.text != null ? /\n\d{2}\.\d{2}\.\d{2}[^\n/]*\/\s*([^\n]+)/.exec(r.text) : null;
+    const hr0 = hrM ? +hrM[1] : null;
+    const p = {
+      ...r, tags: r.tags || [], d0,
+      d: d0 && d0 <= today ? d0 : null,
+      hr: hr0 != null && hr0 >= 0 && hr0 <= 23 ? hr0 : null,
+      hm: hmM ? hmM[1].replace('.', '') : null,
+      loc: r.text != null ? (locM ? locM[1].trim() : null) : (r.loc || null),
+    };
+    p.country = country(p);
+    return p;
+  });
+  const dated = poems.filter(p => p.d);
+  const year = (p) => p.d.getUTCFullYear();
+  const count = (arr, keyFn) => { const m = new Map(); arr.forEach(x => { const k = keyFn(x); m.set(k, (m.get(k) || 0) + 1); }); return m; };
+  const sum = (arr, f) => arr.reduce((a, x) => a + (f(x) || 0), 0);
+  const avg = (arr, f) => { const v = arr.map(f).filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+  const byTitle = (a, b) => String(a.title || '').localeCompare(String(b.title || ''));
+  const byDateThenTitle = (a, b) => (a.d && b.d ? a.d - b.d : a.d ? -1 : b.d ? 1 : 0) || byTitle(a, b);
+
+  const out = {};
+  const years = dated.map(year);
+  out.summary = [{
+    poems: poems.length, dated: dated.length, timed: poems.filter(p => p.hr != null).length,
+    first_year: years.length ? Math.min(...years) : null, last_year: years.length ? Math.max(...years) : null,
+    words: sum(poems, p => p.words), avg_words: avg(poems, p => p.words), avg_lines: avg(poems, p => p.lines),
+  }];
+  const yMap = new Map();
+  dated.forEach(p => { const y = year(p); const o = yMap.get(y) || { year: y, poems: 0, words: 0 }; o.poems++; o.words += p.words || 0; yMap.set(y, o); });
+  out.by_year = [...yMap.values()].sort((a, b) => a.year - b.year);
+  const mw = count(dated, p => `${p.d.getUTCMonth() + 1}|${p.d.getUTCDay()}`);
+  out.month_weekday = [...mw].map(([k, n]) => { const [m, w] = k.split('|'); return { month: +m, weekday: +w, poems: n }; })
+    .sort((a, b) => a.month - b.month || a.weekday - b.weekday);
+  const hm = count(poems.filter(p => p.hr != null), p => p.hr);
+  out.hours = Array.from({ length: 24 }, (_, h) => ({ hour: h, poems: hm.get(h) || 0 }));
+
+  const fam = [];
+  Object.entries(C.fam).forEach(([f, ts]) => ts.split(/\s+/).forEach(t => fam.push([t, f])));
+  out.themes = fam.map(([theme, family]) => ({ theme, family, poems: poems.filter(p => p.tags.includes(theme)).length }))
+    .filter(r => r.poems > 0).sort((a, b) => b.poems - a.poems);
+
+  const era = (p) => { const y = year(p); return y < 2013 ? '2004–12' : y < 2018 ? '2013–17' : y < 2023 ? '2018–22' : '2023–26'; };
+  const eraTot = count(dated, era);
+  const eras = [...eraTot.keys()].sort();
+  const hits = new Map();
+  dated.forEach(p => p.tags.forEach(t => { if (C.TOP16.includes(t)) { const k = `${t}|${era(p)}`; hits.set(k, (hits.get(k) || 0) + 1); } }));
+  const hitThemes = [...new Set([...hits.keys()].map(k => k.split('|')[0]))].sort();
+  out.theme_eras = [];
+  hitThemes.forEach(theme => eras.forEach(e => {
+    const n = hits.get(`${theme}|${e}`) || 0, total = eraTot.get(e);
+    out.theme_eras.push({ theme, era: e, poems: n, total, share: Math.round(n / total * 10000) / 10000 });
+  }));
+
+  out.countries = [...count(poems, p => p.country)].map(([country, n]) => ({ country, poems: n })).sort((a, b) => b.poems - a.poems);
+  const cy = count(dated.filter(p => p.country !== 'Unknown'), p => `${p.country}|${year(p)}`);
+  out.country_years = [...cy].map(([k, n]) => { const [c, y] = k.split('|'); return { country: c, year: +y, poems: n }; })
+    .sort((a, b) => a.country.localeCompare(b.country) || a.year - b.year);
+  out.place_tags = C.PLACE.map(([tag, place, ctry]) => ({ tag, place, country: ctry, poems: poems.filter(p => p.tags.includes(tag)).length }))
+    .filter(r => r.poems > 0).sort((a, b) => b.poems - a.poems || a.place.localeCompare(b.place)).slice(0, 15);
+
+  const filed = (p) => p.collection ?? p.notebook ?? null;
+  out.unlocated = poems.filter(p => p.country === 'Unknown').sort(byDateThenTitle).map(p => ({
+    id: p.id, title: p.title, written: iso(p.d), filed_in: filed(p), reason: p.loc == null ? 'No location line' : 'Location not recognized' }));
+  const tagged = (tag) => poems.filter(p => p.tags.includes(tag)).sort(byDateThenTitle).map(p => ({
+    id: p.id, title: p.title, written: iso(p.d), location: p.loc ?? (p.country !== 'Unknown' ? p.country : null), filed_in: filed(p) }));
+  out.revisit = tagged('revisit');
+  out.brief = tagged('brief');
+  out.collection = tagged('collection');
+  out.unfinished = tagged('not-finished');
+  out.poets = tagged('referencing-poets');
+  out.second = tagged('second-pass');
+
+  const card = (p, extra) => p ? [{
+    id: p.id, title: p.title, written: longDate(p.d0), time: p.hm ? `${p.hm.slice(0, 2)}:${p.hm.slice(2, 4)}` : null,
+    location: p.loc, words: p.words, lines: p.lines, tags: p.tags.join(', '), text: p.text, ...extra }] : [];
+  const latest = poems.filter(p => p.d0 && p.d0 <= today)
+    .sort((a, b) => (b.d0 - a.d0) || String(b.hm || '').localeCompare(String(a.hm || '')) || b.id - a.id)[0];
+  out.latest = card(latest);
+  const normTs = (v) => String(v).replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+  const ts = (p) => p.upnote_updated_at ? Date.parse(normTs(p.upnote_updated_at)) : null;
+  const upd = poems.slice().sort((a, b) => {
+    const x = ts(a), y = ts(b);
+    if (x !== y) { if (x == null) return 1; if (y == null) return -1; return y - x; }
+    const le = String(b.last_edited || '').localeCompare(String(a.last_edited || ''));
+    return le || b.id - a.id;
+  })[0];
+  const updatedLabel = (p) => {
+    if (!p) return null;
+    if (p.upnote_updated_at) {
+      const f = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Bangkok', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+      const o = Object.fromEntries(f.formatToParts(new Date(normTs(p.upnote_updated_at))).map(x => [x.type, x.value]));
+      return `${o.month} ${o.day}, ${o.year} at ${o.hour}:${o.minute}`;
+    }
+    return p.last_edited ? longDate(new Date(p.last_edited + 'T00:00:00Z')) : null;
+  };
+  out.updated = card(upd, { updated: updatedLabel(upd) });
+  out.poem_texts = poems.map(p => card(p)[0]);
+  out._poems = poems.map(p => ({ id: p.id, title: p.title, iso: iso(p.d), year: p.d ? p.d.getUTCFullYear() : null, month: p.d ? p.d.getUTCMonth() + 1 : null, weekday: p.d ? p.d.getUTCDay() : null, hr: p.hr, country: p.country, tags: p.tags, era: p.d ? era(p) : null }));
+  return out;
+}
+
+</script>
+<script>
+const CONSTS = {"TW": "Da-an|Jhong|Danshuei|Singfuliao|Xinyi Road|ShiDa|OH CHA CHA|NEXT DOOR|Yaboo|Neighbor.s Cafe|Taipei|Taiwan|Chiayi|Chaiyi|Yongkang|Jinhua|Qingtian|Taoyuan|Taichung|Kaohsiung|Tainan", "VN": "Mekong|Saigon|Bao Loc|Ba Ria|Phu My|Danang|Da Nang|Da Lat|Dalat|SGN|Vietnam|Tỉnh|Hanoi|Vung Tau|Hoi An|Nha Trang", "TH": "Bangkok|BKK|Mae Rim|Krabi|Chiang|Lamphun|Pak Chong|Chom ?Thong|Thailand|Beekeeper|Sukhothai|Lampang|Ao Nang|Samut", "CN": "China|Beijing|Shanghai|Guangzhou|Shenzhen|Shantou|Xiamen", "NL": "Netherlands|Rotterdam|Amsterdam", "DE": "Germany|Berlin", "US": "1007 Ct|Roots|sbux|Starbucks|Queen Anne|Colleyville|Hurst|Bedford|Euless|Grapevine|Keller|Southlake|Dallas|Fort Worth|Arlington|Denton|Waco|Austin|San Antonio|San Diego|Jasper|Texas|, TX|, AR|Arkansas|Florida|Spokane|Tucson|Del Rio|Whole Foods|Somerset|Rampart|Chic-fil-A|Torchy|Greenville|Estate Coffee|Brew.s|Race Street|Trinity|Babylon|Chapp|Scooter|Hampton Inn|Marriott|NRH|CMS|CNC|Amherst|Chisholm|Precinct|Sandy Lake|Smithfield|Mid-Cities|Glade|Broadway|Not Just Pho|Boba Tea|Tandoor|Pho One|Pho Bac|Ahoyama|Executive|Buon Giorno|Flavors Indian|Sweet Magik|Bird Rock|Dichotomy|Trio|SMS|Sierra Springs|Hidden Oaks|Brown Trail|Botanical|Rosa.s|fire station", "fam": {"Mood": "frustration sadness mania desperation depression anxiety calm loneliness anger isolation", "Love & body": "infatuation lust longing biology blood", "Existence": "purpose death suicide memory dream violence", "World": "nature animal ideology religion political environmental-critique", "Imagery": "visuals aural smell wind sun fire-burn rain"}, "TOP16": ["frustration", "purpose", "violence", "mania", "memory", "sadness", "nature", "death", "suicide", "isolation", "depression", "calm", "infatuation", "anxiety", "lust", "dream"], "PLACE": [["Vietnam", "Vietnam", "Vietnam"], ["Saigon", "Saigon", "Vietnam"], ["Phu-My", "Phu My", "Vietnam"], ["Bao-Loc", "Bao Loc", "Vietnam"], ["Ba-Ria", "Ba Ria", "Vietnam"], ["Danang", "Danang", "Vietnam"], ["Taiwan", "Taiwan", "Taiwan"], ["Taipei", "Taipei", "Taiwan"], ["Chiayi", "Chiayi", "Taiwan"], ["China", "China", "China"], ["Hong-Kong", "Hong Kong", "China"], ["Thailand", "Thailand", "Thailand"], ["Bangkok", "Bangkok", "Thailand"], ["Pak-Chong", "Pak Chong", "Thailand"], ["Mae-Rim", "Mae Rim", "Thailand"], ["Krabi", "Krabi", "Thailand"], ["Lamphun", "Lamphun", "Thailand"], ["Chiang-Mai", "Chiang Mai", "Thailand"], ["Chiang-Rai", "Chiang Rai", "Thailand"], ["San-Antonio", "San Antonio", "USA"], ["San-Diego", "San Diego", "USA"], ["Colleyville", "Colleyville", "USA"], ["Florida", "Florida", "USA"], ["Austin", "Austin", "USA"], ["Waco", "Waco", "USA"], ["Texas", "Texas", "USA"], ["Spokane", "Spokane", "USA"], ["Washington", "Washington", "USA"], ["Del-Rio", "Del Rio", "USA"], ["Netherlands", "Netherlands", "Netherlands"], ["Rotterdam", "Rotterdam", "Netherlands"], ["Germany", "Germany", "Germany"], ["Berlin", "Berlin", "Germany"]]};
+const sb = window.supabase.createClient('https://jblxjixgkfsejzvmbxgb.supabase.co', 'sb_publishable_x2U2s3sp-bvpIM-xG1TTtA_TJv9eNDg', { auth: { persistSession: true, autoRefreshToken: true } });
+const COLS = 'id,title,source_file,tags,words,lines,notebook,collection,upnote_updated_at,last_edited,loc';
+const $id = (i) => document.getElementById(i);
+let loadedOnce = false;
+
+async function fetchAll() {
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb.from('poems_meta').select(COLS).order('id').range(from, from + 999);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < 1000) break;
+  }
+  return rows;
+}
+
+async function load() {
+  $id('load-err').hidden = true;
+  $id('refresh').disabled = true;
+  if (loadedOnce) $id('stamp').textContent = 'Refreshing…'; else dash._loading();
+  try {
+    const rows = await fetchAll();
+    if (!rows.length) throw new Error('No poems were returned. This account may not have read access.');
+    const ds = computeDatasets(rows, CONSTS);
+    dash._set(ds);
+    loadedOnce = true;
+    $id('stamp').textContent = `${rows.length.toLocaleString()} poems loaded ${new Date().toLocaleString()}`;
+  } catch (e) {
+    console.error(e);
+    $id('load-err').textContent = 'Could not load poems from Supabase: ' + (e.message || e);
+    $id('load-err').hidden = false;
+    if (!loadedOnce) dash._error();
+    $id('stamp').textContent = '';
+  } finally {
+    $id('refresh').disabled = false;
+  }
+}
+
+function show(signedIn, email) {
+  $id('auth').hidden = signedIn;
+  $id('app').hidden = !signedIn;
+  $id('who').textContent = email ? `Signed in as ${email}` : '';
+}
+
+$id('login').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  $id('login-ok').textContent = '';
+  if (!$id('password').value) { $id('login-err').textContent = 'Enter your password, or use "Email me a sign-in link".'; return; }
+  const btn = $id('login-btn'); btn.disabled = true; $id('login-err').textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email: $id('email').value.trim(), password: $id('password').value });
+  btn.disabled = false;
+  if (error) { $id('login-err').textContent = error.message || 'Sign-in failed.'; return; }
+  $id('password').value = '';
+  show(true, data.user?.email); load();
+});
+$id('logout').addEventListener('click', async () => { await sb.auth.signOut(); loadedOnce = false; dash._loading(); show(false); });
+$id('refresh').addEventListener('click', load);
+const textCache = new Map();
+window.fetchPoem = async (id) => {
+  id = Number(id);
+  if (!textCache.has(id)) {
+    const { data, error } = await sb.from('poems').select('id,text').eq('id', id).single();
+    if (error) throw error;
+    textCache.set(id, data.text);
+  }
+  return { text: textCache.get(id) };
+};
+
+// Passwordless sign-in and password reset by email.
+const isRecovery = /type=recovery/.test(location.hash);
+const returnUrl = /^https?:/.test(location.protocol) ? location.origin + location.pathname : null;
+const cleanUrl = () => { if (location.hash) history.replaceState(null, '', location.pathname + location.search); };
+function emailOrError() {
+  const email = $id('email').value.trim();
+  $id('login-err').textContent = ''; $id('login-ok').textContent = '';
+  if (!email) { $id('login-err').textContent = 'Enter your email first.'; return null; }
+  if (!returnUrl) { $id('login-err').textContent = 'Email links only work when this page is opened from its web address (for example GitHub Pages), not as a file on your computer.'; return null; }
+  return email;
+}
+$id('magic-btn').addEventListener('click', async () => {
+  const email = emailOrError(); if (!email) return;
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: returnUrl } });
+  if (error) $id('login-err').textContent = error.message;
+  else $id('login-ok').textContent = `Check ${email} for a sign-in link, then open it in this browser.`;
+});
+$id('forgot-btn').addEventListener('click', async () => {
+  const email = emailOrError(); if (!email) return;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: returnUrl });
+  if (error) $id('login-err').textContent = error.message;
+  else $id('login-ok').textContent = `Check ${email} for a link to set a new password.`;
+});
+function showReset() {
+  $id('auth').hidden = false; $id('app').hidden = true;
+  $id('login').hidden = true; $id('reset').hidden = false;
+  $id('new-password').focus();
+}
+$id('reset').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const btn = $id('reset-btn'); btn.disabled = true; $id('reset-err').textContent = '';
+  const { data, error } = await sb.auth.updateUser({ password: $id('new-password').value });
+  btn.disabled = false;
+  if (error) { $id('reset-err').textContent = error.message; return; }
+  $id('new-password').value = '';
+  $id('reset').hidden = true; $id('login').hidden = false;
+  cleanUrl(); show(true, data.user?.email); load();
+});
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') { showReset(); return; }
+  if (event === 'SIGNED_IN' && session && $id('app').hidden && !isRecovery && $id('reset').hidden) {
+    cleanUrl(); show(true, session.user?.email); if (!loadedOnce) load();
+  }
+});
+
+(async () => {
+  const { data } = await sb.auth.getSession();
+  if (isRecovery && data.session) { showReset(); return; }
+  if (data.session) { cleanUrl(); show(true, data.session.user?.email); if (!loadedOnce) load(); } else show(false);
+})();
+</script>
+<script>
+(() => {
+  const $ = (i) => document.getElementById(i);
+  const pct = (v) => (v * 100 < 10 && v > 0 ? (v * 100).toFixed(1) : Math.round(v * 100)) + '%';
+  const GROUPS = [['Top 16 themes', CONSTS.TOP16]].concat(Object.entries(CONSTS.fam).map(([f, ts]) => [f, ts.split(/\s+/)]));
+  GROUPS.forEach(([name], i) => { const o = document.createElement('option'); o.value = i; o.textContent = name; $('f-group').appendChild(o); });
+  const st = { group: 0, sort: 'share', min: 5, sel: null };
+  try { const s = JSON.parse(localStorage.getItem('themes-q-filters') || '{}'); Object.assign(st, { group: s.group ?? 0, sort: s.sort ?? 'share', min: s.min ?? 5 }); } catch (e) {}
+  $('f-group').value = st.group; $('f-sort').value = st.sort; $('f-min').value = st.min;
+  const save = () => { try { localStorage.setItem('themes-q-filters', JSON.stringify({ group: st.group, sort: st.sort, min: st.min })); } catch (e) {} };
+  $('f-group').addEventListener('change', e => { st.group = +e.target.value; st.sel = null; save(); render(); });
+  $('f-sort').addEventListener('change', e => { st.sort = e.target.value; save(); render(); });
+  $('f-min').addEventListener('change', e => { st.min = +e.target.value; save(); render(); });
+
+  const tip = $('tip');
+  const showTip = (ev, html) => { tip.innerHTML = html; tip.style.opacity = 1; const r = tip.getBoundingClientRect(); let x = ev.clientX + 14, y = ev.clientY + 14; if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14; if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - 14; tip.style.left = x + 'px'; tip.style.top = y + 'px'; };
+  const hideTip = () => { tip.style.opacity = 0; };
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  let Q = null; // { quarters: [{key, y, q, poems: [...]}], index }
+  function buildQuarters(poems) {
+    const dated = poems.filter(p => p.iso);
+    if (!dated.length) return { quarters: [] };
+    const qOf = (p) => ({ y: +p.iso.slice(0, 4), q: Math.floor((+p.iso.slice(5, 7) - 1) / 3) + 1 });
+    let lo = Infinity, hi = -Infinity;
+    dated.forEach(p => { const { y, q } = qOf(p); const k = y * 4 + q - 1; lo = Math.min(lo, k); hi = Math.max(hi, k); });
+    const quarters = [];
+    for (let k = lo; k <= hi; k++) quarters.push({ k, y: Math.floor(k / 4), q: (k % 4) + 1, key: `Q${(k % 4) + 1} ${Math.floor(k / 4)}`, poems: [] });
+    dated.forEach(p => { const { y, q } = qOf(p); quarters[y * 4 + q - 1 - lo].poems.push(p); });
+    return { quarters, dated: dated.length };
+  }
+
+  function stats(themes) {
+    const qs = Q.quarters;
+    return themes.map(theme => {
+      const cells = qs.map(q => { const n = q.poems.filter(p => p.tags.includes(theme)).length; return { theme, q, n, total: q.poems.length, share: q.poems.length ? n / q.poems.length : 0 }; });
+      const allN = cells.reduce((a, c) => a + c.n, 0);
+      const ok = cells.filter(c => c.total >= st.min && c.n > 0);
+      const peak = ok.length ? ok.reduce((a, c) => (c.share > a.share ? c : a)) : null;
+      const latest = [...cells].reverse().find(c => c.total > 0);
+      return { theme, cells, allN, overall: allN / Q.dated, peak, latest };
+    }).filter(r => r.allN > 0);
+  }
+
+  function render() {
+    const s = dash.data('_poems');
+    if (s.status !== 'ok') { if (s.status === 'error') $('hm-wrap').innerHTML = '<p class="detail-empty">Could not load poems.</p>'; return; }
+    if (!Q) Q = buildQuarters(s.data);
+    if (!Q.quarters.length) { $('hm-wrap').innerHTML = '<p class="detail-empty">No dated poems.</p>'; return; }
+    let rows = stats(GROUPS[st.group][1]);
+    if (st.sort === 'alpha') rows.sort((a, b) => a.theme.localeCompare(b.theme));
+    else if (st.sort === 'peak') rows.sort((a, b) => (a.peak ? a.peak.q.k : 1e9) - (b.peak ? b.peak.q.k : 1e9));
+    else rows.sort((a, b) => b.overall - a.overall);
+    kpis(rows); heatmap(rows); table(rows);
+    if (st.sel) { const r = rows.find(r => r.theme === st.sel.theme); if (r) detail(r.cells.find(c => c.q.k === st.sel.k)); else clearDetail(); }
+  }
+
+  function kpis(rows) {
+    const qs = Q.quarters, filled = qs.filter(q => q.poems.length);
+    const busiest = qs.reduce((a, q) => (q.poems.length > a.poems.length ? q : a));
+    const top = rows.slice().sort((a, b) => b.overall - a.overall)[0];
+    const rising = rows.map(r => { const recent = r.cells.slice(-8).filter(c => c.total), early = r.cells.slice(0, -8).filter(c => c.total);
+      const sh = (cs) => { const t = cs.reduce((a, c) => a + c.total, 0); return t ? cs.reduce((a, c) => a + c.n, 0) / t : 0; };
+      return { theme: r.theme, d: sh(recent) - sh(early) }; }).sort((a, b) => b.d - a.d)[0];
+    const k = (label, v, sub) => `<div class="kpi"><div class="k">${label}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`;
+    $('kpis').innerHTML = k('Quarters with poems', filled.length.toLocaleString(), `${qs[0].key} to ${qs[qs.length - 1].key}`)
+      + k('Busiest quarter', busiest.key, `${busiest.poems.length.toLocaleString()} poems`)
+      + (top ? k('Most common theme here', esc(top.theme), `${pct(top.overall)} of dated poems`) : '')
+      + (rising && rising.d > 0 ? k('Rising in the last two years', esc(rising.theme), `+${Math.round(rising.d * 100)} points vs. earlier`) : '');
+  }
+
+  function heatmap(rows) {
+    const host = $('hm-wrap'); host.innerHTML = '';
+    const qs = Q.quarters, nQ = qs.length;
+    const labelW = 104, barH = 46, gap = 10, rowH = 20;
+    const avail = Math.max(200, (host.clientWidth || 900) - labelW);
+    const cw = Math.max(9, Math.min(22, (avail - 4) / nQ));
+    const W = cw * nQ + 4, H = barH + gap + rows.length * rowH + 26;
+    // Theme labels stay put while the quarters scroll sideways on small screens.
+    const lab = d3.select(host).append('svg').attr('width', labelW).attr('height', H).attr('aria-hidden', 'true');
+    const wrap = host.appendChild(document.createElement('div')); wrap.className = 'scroller';
+    const svg = d3.select(wrap).append('svg').attr('width', W).attr('height', H).attr('role', 'img').attr('aria-label', 'Heatmap of theme share by quarter');
+    const x = (i) => i * cw;
+    const color = dash.colors[0];
+    const maxShare = d3.quantile(rows.flatMap(r => r.cells.filter(c => c.total >= st.min).map(c => c.share)).sort(d3.ascending), 0.97) || 0.01;
+    const op = d3.scaleLinear().domain([0, maxShare]).range([0.06, 1]).clamp(true);
+    // Poems per quarter
+    const maxN = d3.max(qs, q => q.poems.length) || 1;
+    const by = d3.scaleLinear().domain([0, maxN]).range([0, barH - 12]);
+    lab.append('text').attr('x', labelW - 8).attr('y', barH - 2).attr('text-anchor', 'end').text('poems');
+    lab.append('text').attr('x', labelW - 8).attr('y', 10).attr('text-anchor', 'end').text(maxN);
+    svg.append('g').selectAll('rect').data(qs).join('rect')
+      .attr('x', (d, i) => x(i) + 1).attr('width', Math.max(1, cw - 2)).attr('y', d => barH - by(d.poems.length)).attr('height', d => by(d.poems.length))
+      .attr('rx', Math.min(2, cw / 4)).attr('fill', 'var(--cds-chart-muted)')
+      .on('mousemove', (ev, d) => showTip(ev, `<b>${d.key}</b><br><span class="k">${d.poems.length} poems</span>`)).on('mouseleave', hideTip);
+    // Year separators and labels
+    const top = barH + gap, bottom = top + rows.length * rowH;
+    const yearStep = cw * 4 >= 34 ? 1 : cw * 4 >= 18 ? 2 : 5;
+    qs.forEach((q, i) => {
+      if (q.q !== 1 && i !== 0) return;
+      if (i > 0) svg.append('line').attr('x1', x(i)).attr('x2', x(i)).attr('y1', top - 2).attr('y2', bottom + 2).attr('stroke', 'var(--cds-chart-grid)');
+      if (q.y % yearStep === 0 || i === 0) svg.append('text').attr('x', x(i) + 1).attr('y', bottom + 16).text(q.y);
+    });
+    // Rows
+    const g = svg.append('g');
+    rows.forEach((r, ri) => {
+      const y = top + ri * rowH;
+      lab.append('text').attr('class', 'lab').attr('x', labelW - 8).attr('y', y + rowH / 2 + 4).attr('text-anchor', 'end').text(r.theme);
+      g.append('g').selectAll('rect').data(r.cells).join('rect')
+        .attr('class', d => 'cell' + (st.sel && st.sel.theme === d.theme && st.sel.k === d.q.k ? ' sel' : ''))
+        .attr('x', (d, i) => x(i) + 1).attr('y', y + 1).attr('width', Math.max(1, cw - 2)).attr('height', rowH - 2).attr('rx', 2)
+        .attr('fill', d => d.total ? color : 'transparent')
+        .attr('fill-opacity', d => !d.total ? 0 : (d.n ? op(d.share) : 0.04) * (d.total < st.min ? 0.4 : 1))
+        .on('mousemove', (ev, d) => showTip(ev, d.total ? `<b>${d.q.key} · ${esc(d.theme)}</b><br>${pct(d.share)} <span class="k">(${d.n} of ${d.total} poems)${d.total < st.min ? ' · few poems' : ''}</span>` : `<b>${d.q.key}</b><br><span class="k">no dated poems</span>`))
+        .on('mouseleave', hideTip)
+        .on('click', (ev, d) => { if (!d.total) return; st.sel = { theme: d.theme, k: d.q.k }; g.selectAll('.cell').classed('sel', c => c === d); detail(d); });
+    });
+    // Ramp legend
+    const steps = [0.1, 0.3, 0.5, 0.75, 1].map(t => `<i style="background:${color};opacity:${0.06 + t * 0.94}"></i>`).join('');
+    $('ramp').innerHTML = `<span>0%</span>${steps}<span>${pct(maxShare)}+</span><span style="margin-left:12px"><i class="thin" style="background:${color}"></i> fewer than ${st.min} poems that quarter</span>`;
+    // Start scrolled to the most recent years on narrow screens
+    wrap.scrollLeft = wrap.scrollWidth;
+  }
+
+  function table(rows) {
+    const tb = $('sum').querySelector('tbody');
+    tb.innerHTML = rows.map(r => `<tr><td title="${esc(r.theme)}">${esc(r.theme)}</td><td class="n">${pct(r.overall)}</td>`
+      + (r.peak ? `<td>${r.peak.q.key}</td><td class="n">${pct(r.peak.share)} <span class="m">(${r.peak.n}/${r.peak.total})</span></td>` : `<td class="m">—</td><td class="n m">—</td>`)
+      + `<td class="n hide-narrow">${r.latest ? `${pct(r.latest.share)} <span class="m">${r.latest.q.key}</span>` : '—'}</td></tr>`).join('');
+  }
+
+  function clearDetail() { $('d-title').textContent = 'Poems in a quarter'; $('d-note').textContent = 'Click any cell above to list the poems behind it. Click a title to read it.'; $('d-list').innerHTML = ''; }
+  function detail(c) {
+    if (!c) return clearDetail();
+    const list = c.q.poems.filter(p => p.tags.includes(c.theme)).sort((a, b) => a.iso.localeCompare(b.iso));
+    $('d-title').textContent = `“${c.theme}” in ${c.q.key}`;
+    $('d-note').textContent = `${c.n} of ${c.total} poems that quarter (${pct(c.share)}). Click a title to read it.`;
+    $('d-list').innerHTML = list.length ? list.map(p => `<details data-id="${p.id}"><summary>${esc(p.title || 'Untitled')}<span>${p.iso}</span></summary><pre>Loading…</pre></details>`).join('') : '<p class="detail-empty" style="padding:8px 2px">No poems with this theme that quarter.</p>';
+    $('d-list').querySelectorAll('details').forEach(d => d.addEventListener('toggle', async () => {
+      if (!d.open || d.dataset.loaded) return;
+      d.dataset.loaded = '1';
+      try { const r = await window.fetchPoem(d.dataset.id); d.querySelector('pre').textContent = String(r.text || '').replace(/\r/g, '').trim() || '(empty)'; }
+      catch (e) { d.dataset.loaded = ''; d.querySelector('pre').textContent = 'Could not load this poem.'; }
+    }));
+  }
+
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (dash.data('_poems').status === 'ok') render(); }, 150); });
+  dash.onData(() => { const s = dash.data('_poems'); if (s.status === 'ok') Q = buildQuarters(s.data); render(); });
+})();
+</script>
+</body>
+</html>

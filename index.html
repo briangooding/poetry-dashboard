@@ -52,6 +52,8 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 #auth .linkbtn { all: unset; cursor: pointer; font-size: 13px; color: var(--color-fg-muted); text-decoration: underline; text-underline-offset: 3px; }
 #auth .linkbtn:hover, #auth .linkbtn:focus-visible { color: var(--color-fg); }
 .load-err { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 10px; padding: 16px; color: var(--color-bad); margin-bottom: 16px; }
+.topbar .nav { margin-right: auto; display: flex; gap: 14px; flex-wrap: wrap; }
+.topbar .nav a { margin-right: 0; }
 [hidden] { display: none !important; }
 
 
@@ -157,7 +159,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 </div>
 <div id="app" hidden>
   <div class="wrap">
-    <div class="topbar"><a href="inspiration.html">Inspiration map</a><span id="stamp"></span><span id="who"></span><button class="btn" id="refresh" type="button">Refresh</button><button class="btn" id="logout" type="button">Sign out</button></div>
+    <div class="topbar"><span class="nav"><a href="themes.html">Themes by quarter</a><a href="inspiration.html">Inspiration map</a></span><span id="stamp"></span><span id="who"></span><button class="btn" id="refresh" type="button">Refresh</button><button class="btn" id="logout" type="button">Sign out</button></div>
     <div class="load-err" id="load-err" hidden></div>
 
 
