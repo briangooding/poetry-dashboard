@@ -77,6 +77,8 @@ h1.title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size
 .hm { display: flex; align-items: flex-start; }
 .hm > svg { flex: none; }
 .scroller { flex: 1; min-width: 0; overflow: hidden; }
+.hm.centered { justify-content: center; }
+.hm.centered .scroller { flex: none; }
 .scroller svg { display: block; }
 svg text { font-size: 11px; fill: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
 svg text.lab { fill: var(--color-fg); font-size: 12px; }
@@ -577,6 +579,7 @@ sb.auth.onAuthStateChange((event, session) => {
 
   function heatmap(rows) {
     const host = $('hm-wrap'); host.innerHTML = '';
+    host.classList.toggle('centered', !!st.year);
     const qs = Q.quarters, nQ = qs.length;
     const narrow = (host.clientWidth || 900) < 560;
     const labelW = narrow ? 84 : 104, barH = 46, gap = 10, rowH = 20;
