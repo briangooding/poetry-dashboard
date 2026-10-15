@@ -73,9 +73,10 @@ h1.title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size
 .ramp { display: flex; align-items: center; gap: 6px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: var(--cds-gap-sm); flex-wrap: wrap; }
 .ramp i { display: inline-block; width: 18px; height: 10px; border-radius: 2px; }
 .ramp .thin { opacity: .35; }
+.wrap { max-width: 1640px; }
 .hm { display: flex; align-items: flex-start; }
 .hm > svg { flex: none; }
-.scroller { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+.scroller { flex: 1; min-width: 0; overflow: hidden; }
 .scroller svg { display: block; }
 svg text { font-size: 11px; fill: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
 svg text.lab { fill: var(--color-fg); font-size: 12px; }
@@ -84,7 +85,21 @@ svg text.lab { fill: var(--color-fg); font-size: 12px; }
 .tip { position: fixed; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: 8px; box-shadow: var(--cds-shadow-popover); padding: 6px 10px; font-size: 12px; white-space: nowrap; opacity: 0; z-index: 5; }
 .tip .k { color: var(--cds-text-secondary); }
 .detail-empty { color: var(--color-fg-muted); font-size: 13px; }
-.plist { border-top: 1px solid var(--color-border-line); max-height: 360px; overflow: auto; }
+.plist { border-top: 1px solid var(--color-border-line); }
+.qhead { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; margin-bottom: var(--cds-gap-sm); }
+.qnav { display: flex; gap: 6px; margin-left: auto; }
+.tlist { border-top: 1px solid var(--color-border-line); }
+.tlist > details { border-bottom: 1px solid var(--color-border-line); }
+.tlist > details > summary { display: grid; grid-template-columns: minmax(90px, 180px) minmax(60px, 520px) 92px; gap: 12px; align-items: center; padding: 7px 2px; cursor: pointer; list-style: none; font-size: 14px; }
+.tlist > details > summary::-webkit-details-marker { display: none; }
+.tlist > details[open] > summary { font-weight: var(--cds-font-weight-medium); }
+.tlist .bar { height: 10px; border-radius: 3px; background: var(--cds-chart-grid); overflow: hidden; }
+.tlist .bar i { display: block; height: 100%; border-radius: 3px; }
+.tlist .num { text-align: right; color: var(--color-fg-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tlist .plist { border-top: none; margin: 0 0 8px 14px; border-left: 2px solid var(--color-border-line); padding-left: 10px; }
+.tlist .plist details:last-child { border-bottom: none; }
+.tlist .grp { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: 10px 2px 4px; border-bottom: 1px solid var(--color-border-line); }
+.qcol { cursor: pointer; }
 .plist details { border-bottom: 1px solid var(--color-border-line); }
 .plist summary { display: flex; justify-content: space-between; gap: 16px; padding: 7px 2px; cursor: pointer; font-size: 14px; list-style: none; }
 .plist summary::-webkit-details-marker { display: none; }
@@ -126,7 +141,7 @@ table.t td.m { color: var(--color-fg-muted); font-size: 12px; }
     <div class="load-err" id="load-err" hidden></div>
 
 <h1 class="title">Themes by quarter</h1>
-<p class="lede">How often each theme tag appears in the poems of every quarter, from the first dated poem to the latest. Each cell is the share of that quarter's poems carrying the tag, so busy and quiet quarters compare fairly. Click a cell to list its poems.</p>
+<p class="lede">How often each theme tag appears in the poems of every quarter, from the first dated poem to the latest. Each cell is the share of that quarter's poems carrying the tag, so busy and quiet quarters compare fairly. Click any quarter to see all of its themes and poems.</p>
 <div class="filters">
   <label>Themes<select id="f-group"></select></label>
   <label>Order<select id="f-sort"><option value="share">Most common first</option><option value="alpha">A to Z</option><option value="peak">By when they peaked</option></select></label>
@@ -140,9 +155,9 @@ table.t td.m { color: var(--color-fg-muted); font-size: 12px; }
   <div class="hm" id="hm-wrap"><div class="dash-skeleton" style="height:420px;flex:1"></div></div>
 </div>
 <div class="card" id="detail">
-  <h2 id="d-title">Poems in a quarter</h2>
-  <p class="note" id="d-note">Click any cell above to list the poems behind it. Click a title to read it.</p>
-  <div class="plist" id="d-list"></div>
+  <div class="qhead"><h2 id="d-title">A quarter's themes</h2><div class="qnav" id="d-nav" hidden><button class="btn" type="button" id="d-prev">← Previous</button><button class="btn" type="button" id="d-next">Next →</button></div></div>
+  <p class="note" id="d-note">Click any quarter in the chart above (a cell or its bar) to see every theme in that quarter. Open a theme to list its poems, and a title to read it.</p>
+  <div id="d-list"></div>
 </div>
 <div class="card">
   <h2>Theme summary</h2>
@@ -503,7 +518,7 @@ sb.auth.onAuthStateChange((event, session) => {
     else if (st.sort === 'peak') rows.sort((a, b) => (a.peak ? a.peak.q.k : 1e9) - (b.peak ? b.peak.q.k : 1e9));
     else rows.sort((a, b) => b.overall - a.overall);
     kpis(rows); heatmap(rows); table(rows);
-    if (st.sel) { const r = rows.find(r => r.theme === st.sel.theme); if (r) detail(r.cells.find(c => c.q.k === st.sel.k)); else clearDetail(); }
+    if (st.sel) detail(); else clearDetail();
   }
 
   function kpis(rows) {
@@ -523,11 +538,12 @@ sb.auth.onAuthStateChange((event, session) => {
   function heatmap(rows) {
     const host = $('hm-wrap'); host.innerHTML = '';
     const qs = Q.quarters, nQ = qs.length;
-    const labelW = 104, barH = 46, gap = 10, rowH = 20;
-    const avail = Math.max(200, (host.clientWidth || 900) - labelW);
-    const cw = Math.max(9, Math.min(22, (avail - 4) / nQ));
-    const W = cw * nQ + 4, H = barH + gap + rows.length * rowH + 26;
-    // Theme labels stay put while the quarters scroll sideways on small screens.
+    const narrow = (host.clientWidth || 900) < 560;
+    const labelW = narrow ? 84 : 104, barH = 46, gap = 10, rowH = 20;
+    const avail = Math.max(120, (host.clientWidth || 900) - labelW);
+    // Every quarter fits in the available width; no sideways scrolling.
+    const cw = Math.min(26, (avail - 2) / nQ), pad = cw >= 6 ? 1 : 0;
+    const W = Math.floor(cw * nQ + 2), H = barH + gap + rows.length * rowH + 26;
     const lab = d3.select(host).append('svg').attr('width', labelW).attr('height', H).attr('aria-hidden', 'true');
     const wrap = host.appendChild(document.createElement('div')); wrap.className = 'scroller';
     const svg = d3.select(wrap).append('svg').attr('width', W).attr('height', H).attr('role', 'img').attr('aria-label', 'Heatmap of theme share by quarter');
@@ -541,16 +557,20 @@ sb.auth.onAuthStateChange((event, session) => {
     lab.append('text').attr('x', labelW - 8).attr('y', barH - 2).attr('text-anchor', 'end').text('poems');
     lab.append('text').attr('x', labelW - 8).attr('y', 10).attr('text-anchor', 'end').text(maxN);
     svg.append('g').selectAll('rect').data(qs).join('rect')
-      .attr('x', (d, i) => x(i) + 1).attr('width', Math.max(1, cw - 2)).attr('y', d => barH - by(d.poems.length)).attr('height', d => by(d.poems.length))
-      .attr('rx', Math.min(2, cw / 4)).attr('fill', 'var(--cds-chart-muted)')
-      .on('mousemove', (ev, d) => showTip(ev, `<b>${d.key}</b><br><span class="k">${d.poems.length} poems</span>`)).on('mouseleave', hideTip);
+      .attr('class', 'qcol')
+      .attr('x', (d, i) => x(i) + pad).attr('width', Math.max(0.5, cw - 2 * pad)).attr('y', d => barH - by(d.poems.length)).attr('height', d => by(d.poems.length))
+      .attr('rx', Math.min(2, cw / 4)).attr('fill', d => st.sel && st.sel.k === d.k ? 'var(--color-fg-muted)' : 'var(--cds-chart-muted)')
+      .on('mousemove', (ev, d) => showTip(ev, `<b>${d.key}</b><br><span class="k">${d.poems.length} poems · click for all themes</span>`)).on('mouseleave', hideTip)
+      .on('click', (ev, d) => { if (d.poems.length) select(d.k, null); });
     // Year separators and labels
     const top = barH + gap, bottom = top + rows.length * rowH;
-    const yearStep = cw * 4 >= 34 ? 1 : cw * 4 >= 18 ? 2 : 5;
+    const yearStep = cw * 4 >= 34 ? 1 : cw * 4 >= 17 ? 2 : 5;
     qs.forEach((q, i) => {
       if (q.q !== 1 && i !== 0) return;
       if (i > 0) svg.append('line').attr('x1', x(i)).attr('x2', x(i)).attr('y1', top - 2).attr('y2', bottom + 2).attr('stroke', 'var(--cds-chart-grid)');
-      if (q.y % yearStep === 0 || i === 0) svg.append('text').attr('x', x(i) + 1).attr('y', bottom + 16).text(q.y);
+      const firstStep = qs.findIndex(o => o.q === 1 && o.y % yearStep === 0);
+      const show = q.y % yearStep === 0 ? q.q === 1 : (i === 0 && (firstStep < 0 || x(firstStep) - x(0) >= 32));
+      if (show) { const t = svg.append('text').attr('y', bottom + 16).text(q.y); if (x(i) + 30 > W) t.attr('x', W).attr('text-anchor', 'end'); else t.attr('x', x(i) + 1); }
     });
     // Rows
     const g = svg.append('g');
@@ -559,18 +579,16 @@ sb.auth.onAuthStateChange((event, session) => {
       lab.append('text').attr('class', 'lab').attr('x', labelW - 8).attr('y', y + rowH / 2 + 4).attr('text-anchor', 'end').text(r.theme);
       g.append('g').selectAll('rect').data(r.cells).join('rect')
         .attr('class', d => 'cell' + (st.sel && st.sel.theme === d.theme && st.sel.k === d.q.k ? ' sel' : ''))
-        .attr('x', (d, i) => x(i) + 1).attr('y', y + 1).attr('width', Math.max(1, cw - 2)).attr('height', rowH - 2).attr('rx', 2)
+        .attr('x', (d, i) => x(i) + pad).attr('y', y + 1).attr('width', Math.max(0.5, cw - 2 * pad)).attr('height', rowH - 2).attr('rx', Math.min(2, cw / 4))
         .attr('fill', d => d.total ? color : 'transparent')
         .attr('fill-opacity', d => !d.total ? 0 : (d.n ? op(d.share) : 0.04) * (d.total < st.min ? 0.4 : 1))
-        .on('mousemove', (ev, d) => showTip(ev, d.total ? `<b>${d.q.key} · ${esc(d.theme)}</b><br>${pct(d.share)} <span class="k">(${d.n} of ${d.total} poems)${d.total < st.min ? ' · few poems' : ''}</span>` : `<b>${d.q.key}</b><br><span class="k">no dated poems</span>`))
+        .on('mousemove', (ev, d) => showTip(ev, d.total ? `<b>${d.q.key} · ${esc(d.theme)}</b><br>${pct(d.share)} <span class="k">(${d.n} of ${d.total} poems)${d.total < st.min ? ' · few poems' : ''} · click for all themes</span>` : `<b>${d.q.key}</b><br><span class="k">no dated poems</span>`))
         .on('mouseleave', hideTip)
-        .on('click', (ev, d) => { if (!d.total) return; st.sel = { theme: d.theme, k: d.q.k }; g.selectAll('.cell').classed('sel', c => c === d); detail(d); });
+        .on('click', (ev, d) => { if (d.total) select(d.q.k, d.theme); });
     });
     // Ramp legend
     const steps = [0.1, 0.3, 0.5, 0.75, 1].map(t => `<i style="background:${color};opacity:${0.06 + t * 0.94}"></i>`).join('');
     $('ramp').innerHTML = `<span>0%</span>${steps}<span>${pct(maxShare)}+</span><span style="margin-left:12px"><i class="thin" style="background:${color}"></i> fewer than ${st.min} poems that quarter</span>`;
-    // Start scrolled to the most recent years on narrow screens
-    wrap.scrollLeft = wrap.scrollWidth;
   }
 
   function table(rows) {
@@ -580,20 +598,55 @@ sb.auth.onAuthStateChange((event, session) => {
       + `<td class="n hide-narrow">${r.latest ? `${pct(r.latest.share)} <span class="m">${r.latest.q.key}</span>` : '—'}</td></tr>`).join('');
   }
 
-  function clearDetail() { $('d-title').textContent = 'Poems in a quarter'; $('d-note').textContent = 'Click any cell above to list the poems behind it. Click a title to read it.'; $('d-list').innerHTML = ''; }
-  function detail(c) {
-    if (!c) return clearDetail();
-    const list = c.q.poems.filter(p => p.tags.includes(c.theme)).sort((a, b) => a.iso.localeCompare(b.iso));
-    $('d-title').textContent = `“${c.theme}” in ${c.q.key}`;
-    $('d-note').textContent = `${c.n} of ${c.total} poems that quarter (${pct(c.share)}). Click a title to read it.`;
-    $('d-list').innerHTML = list.length ? list.map(p => `<details data-id="${p.id}"><summary>${esc(p.title || 'Untitled')}<span>${p.iso}</span></summary><pre>Loading…</pre></details>`).join('') : '<p class="detail-empty" style="padding:8px 2px">No poems with this theme that quarter.</p>';
-    $('d-list').querySelectorAll('details').forEach(d => d.addEventListener('toggle', async () => {
+  // Quarter detail: every theme in the chosen quarter, each opening to its poems.
+  const ALL_THEMES = [...new Set([...CONSTS.TOP16, ...Object.values(CONSTS.fam).flatMap(t => t.split(/\s+/))])];
+  const THEME_SET = new Set(ALL_THEMES);
+  function select(k, theme) {
+    st.sel = { k, theme };
+    d3.selectAll('#hm-wrap .cell').classed('sel', c => c.q.k === k && c.theme === theme);
+    d3.selectAll('#hm-wrap .qcol').attr('fill', d => d.k === k ? 'var(--color-fg-muted)' : 'var(--cds-chart-muted)');
+    detail();
+    const card = $('detail'), r = card.getBoundingClientRect();
+    if (r.top > innerHeight - 120) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function clearDetail() {
+    $('d-title').textContent = "A quarter's themes"; $('d-nav').hidden = true;
+    $('d-note').textContent = 'Click any quarter in the chart above (a cell or its bar) to see every theme in that quarter. Open a theme to list its poems, and a title to read it.';
+    $('d-list').innerHTML = '';
+  }
+  const poemItems = (list) => list.map(p => `<details data-id="${p.id}"><summary>${esc(p.title || 'Untitled')}<span>${p.iso}</span></summary><pre>Loading…</pre></details>`).join('');
+  function detail() {
+    const q = Q.quarters.find(q => q.k === st.sel.k);
+    if (!q || !q.poems.length) return clearDetail();
+    const total = q.poems.length, color = dash.colors[0];
+    const counts = new Map(), other = new Map();
+    q.poems.forEach(p => p.tags.forEach(t => { const m = THEME_SET.has(t) ? counts : other; m.set(t, (m.get(t) || 0) + 1); }));
+    const themes = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    const untagged = q.poems.filter(p => !p.tags.some(t => THEME_SET.has(t)));
+    $('d-title').textContent = `${q.key}: ${themes.length} theme${themes.length === 1 ? '' : 's'} across ${total} poem${total === 1 ? '' : 's'}`;
+    $('d-note').textContent = `Every theme tag used that quarter, most frequent first, with the share of the quarter's poems carrying it. Open a theme to list its poems.${total < st.min ? ` Only ${total} poem${total === 1 ? '' : 's'} this quarter, so shares move a lot.` : ''}`;
+    $('d-nav').hidden = false;
+    const row = (name, n, list, open) => `<details${open ? ' open' : ''}><summary><span>${esc(name)}</span><span class="bar"><i style="width:${(n / total) * 100}%;background:${color}"></i></span><span class="num">${n} · ${pct(n / total)}</span></summary><div class="plist">${poemItems(list)}</div></details>`;
+    const byDate = (a, b) => a.iso.localeCompare(b.iso);
+    let html = '<div class="tlist">' + (themes.length ? themes.map(([t, n]) => row(t, n, q.poems.filter(p => p.tags.includes(t)).sort(byDate), t === st.sel.theme)).join('') : '<p class="detail-empty" style="padding:8px 2px">No theme tags on this quarter\'s poems.</p>');
+    if (untagged.length) html += row('no theme tag', untagged.length, untagged.sort(byDate), false);
+    html += `<div class="grp">All poems this quarter</div>` + row('all poems', total, q.poems.slice().sort(byDate), !st.sel.theme && !themes.length) + '</div>';
+    $('d-list').innerHTML = html;
+    $('d-list').querySelectorAll('.plist details').forEach(d => d.addEventListener('toggle', async () => {
       if (!d.open || d.dataset.loaded) return;
       d.dataset.loaded = '1';
       try { const r = await window.fetchPoem(d.dataset.id); d.querySelector('pre').textContent = String(r.text || '').replace(/\r/g, '').trim() || '(empty)'; }
       catch (e) { d.dataset.loaded = ''; d.querySelector('pre').textContent = 'Could not load this poem.'; }
     }));
   }
+  const step = (dir) => {
+    if (!st.sel) return;
+    const qs = Q.quarters; let i = qs.findIndex(q => q.k === st.sel.k) + dir;
+    while (i >= 0 && i < qs.length && !qs[i].poems.length) i += dir;
+    if (i >= 0 && i < qs.length) select(qs[i].k, st.sel.theme);
+  };
+  $('d-prev').addEventListener('click', () => step(-1));
+  $('d-next').addEventListener('click', () => step(1));
 
   let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (dash.data('_poems').status === 'ok') render(); }, 150); });
   dash.onData(() => { const s = dash.data('_poems'); if (s.status === 'ok') Q = buildQuarters(s.data); render(); });
