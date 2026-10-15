@@ -100,6 +100,10 @@ svg text.lab { fill: var(--color-fg); font-size: 12px; }
 .tlist .plist details:last-child { border-bottom: none; }
 .tlist .grp { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: 10px 2px 4px; border-bottom: 1px solid var(--color-border-line); }
 .qcol { cursor: pointer; }
+.yhit { cursor: pointer; fill: transparent; }
+.yhit:hover { fill: var(--cds-chart-grid); }
+svg text.ylab { pointer-events: none; }
+svg text.ylab.link { fill: var(--color-fg); text-decoration: underline; text-decoration-color: var(--cds-chart-axis); }
 .plist details { border-bottom: 1px solid var(--color-border-line); }
 .plist summary { display: flex; justify-content: space-between; gap: 16px; padding: 7px 2px; cursor: pointer; font-size: 14px; list-style: none; }
 .plist summary::-webkit-details-marker { display: none; }
@@ -141,16 +145,16 @@ table.t td.m { color: var(--color-fg-muted); font-size: 12px; }
     <div class="load-err" id="load-err" hidden></div>
 
 <h1 class="title">Themes by quarter</h1>
-<p class="lede">How often each theme tag appears in the poems of every quarter, from the first dated poem to the latest. Each cell is the share of that quarter's poems carrying the tag, so busy and quiet quarters compare fairly. Click any quarter to see all of its themes and poems.</p>
+<p class="lede">How often each theme tag appears in the poems of every quarter, from the first dated poem to the latest. Each cell is the share of that quarter's poems carrying the tag, so busy and quiet quarters compare fairly. Click any quarter to see all of its themes and poems, or click a year to see it month by month.</p>
 <div class="filters">
   <label>Themes<select id="f-group"></select></label>
   <label>Order<select id="f-sort"><option value="share">Most common first</option><option value="alpha">A to Z</option><option value="peak">By when they peaked</option></select></label>
-  <label>Fade quarters with fewer than<select id="f-min"><option value="1">1 poem</option><option value="5" selected>5 poems</option><option value="10">10 poems</option></select></label>
+  <label><span id="f-min-lab">Fade quarters with fewer than</span><select id="f-min"><option value="1">1 poem</option><option value="5" selected>5 poems</option><option value="10">10 poems</option></select></label>
 </div>
 <div class="kpis" id="kpis"></div>
 <div class="card">
-  <h2>Share of each quarter's poems, by theme</h2>
-  <p class="note" id="hm-note">Top bar: poems written that quarter. Faded cells come from quarters with few poems, where one poem swings the share a lot.</p>
+  <div class="qhead"><h2 id="hm-title">Share of each quarter's poems, by theme</h2><div class="qnav" id="y-nav" hidden><button class="btn" type="button" id="y-all">← All years</button><button class="btn" type="button" id="y-prev">‹ Year</button><button class="btn" type="button" id="y-next">Year ›</button></div></div>
+  <p class="note" id="hm-note"></p>
   <div class="ramp" id="ramp"></div>
   <div class="hm" id="hm-wrap"><div class="dash-skeleton" style="height:420px;flex:1"></div></div>
 </div>
@@ -161,9 +165,9 @@ table.t td.m { color: var(--color-fg-muted); font-size: 12px; }
 </div>
 <div class="card">
   <h2>Theme summary</h2>
-  <p class="note">Peak quarter counts only quarters with at least the number of poems chosen above.</p>
+  <p class="note" id="sum-note"></p>
   <div style="overflow-x:auto"><table class="t" id="sum"><thead><tr>
-    <th style="width:28%">Theme</th><th class="n" style="width:14%">Overall</th><th style="width:20%">Peak quarter</th><th class="n" style="width:16%">Peak share</th><th class="n hide-narrow" style="width:22%">Latest quarter</th>
+    <th style="width:28%">Theme</th><th class="n" style="width:14%">Overall</th><th style="width:20%" id="th-peak">Peak quarter</th><th class="n" style="width:16%">Peak share</th><th class="n hide-narrow" style="width:22%" id="th-latest">Latest quarter</th>
   </tr></thead><tbody></tbody></table></div>
 </div>
 <div class="tip" id="tip"></div>
@@ -470,7 +474,7 @@ sb.auth.onAuthStateChange((event, session) => {
   const pct = (v) => (v * 100 < 10 && v > 0 ? (v * 100).toFixed(1) : Math.round(v * 100)) + '%';
   const GROUPS = [['Top 16 themes', CONSTS.TOP16]].concat(Object.entries(CONSTS.fam).map(([f, ts]) => [f, ts.split(/\s+/)]));
   GROUPS.forEach(([name], i) => { const o = document.createElement('option'); o.value = i; o.textContent = name; $('f-group').appendChild(o); });
-  const st = { group: 0, sort: 'share', min: 5, sel: null };
+  const st = { group: 0, sort: 'share', min: 5, sel: null, year: /^#\d{4}$/.test(location.hash) ? +location.hash.slice(1) : null };
   try { const s = JSON.parse(localStorage.getItem('themes-q-filters') || '{}'); Object.assign(st, { group: s.group ?? 0, sort: s.sort ?? 'share', min: s.min ?? 5 }); } catch (e) {}
   $('f-group').value = st.group; $('f-sort').value = st.sort; $('f-min').value = st.min;
   const save = () => { try { localStorage.setItem('themes-q-filters', JSON.stringify({ group: st.group, sort: st.sort, min: st.min })); } catch (e) {} };
@@ -483,7 +487,24 @@ sb.auth.onAuthStateChange((event, session) => {
   const hideTip = () => { tip.style.opacity = 0; };
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  let Q = null; // { quarters: [{key, y, q, poems: [...]}], index }
+  let Q = null, QA = null, POEMS = null; // Q: the periods on screen (quarters, or one year's months); QA: all quarters
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const U = () => (st.year ? 'month' : 'quarter');
+  function buildMonths(year) {
+    const months = MON.map((m, i) => ({ k: year * 12 + i, y: year, m: i + 1, key: `${m} ${year}`, poems: [] }));
+    POEMS.forEach(p => { if (p.iso && +p.iso.slice(0, 4) === year) months[+p.iso.slice(5, 7) - 1].poems.push(p); });
+    return { quarters: months, dated: months.reduce((a, m) => a + m.poems.length, 0) };
+  }
+  const years = () => [...new Set(QA.quarters.filter(q => q.poems.length).map(q => q.y))];
+  function setYear(y) {
+    st.year = y; st.sel = null; hideTip();
+    try { history.replaceState(null, '', y ? '#' + y : location.pathname + location.search); } catch (e) {}
+    render();
+    if (y) $('hm-title').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  $('y-all').addEventListener('click', () => setYear(null));
+  $('y-prev').addEventListener('click', () => { const ys = years(), i = ys.indexOf(st.year); if (i > 0) setYear(ys[i - 1]); });
+  $('y-next').addEventListener('click', () => { const ys = years(), i = ys.indexOf(st.year); if (i >= 0 && i < ys.length - 1) setYear(ys[i + 1]); });
   function buildQuarters(poems) {
     const dated = poems.filter(p => p.iso);
     if (!dated.length) return { quarters: [] };
@@ -511,7 +532,20 @@ sb.auth.onAuthStateChange((event, session) => {
   function render() {
     const s = dash.data('_poems');
     if (s.status !== 'ok') { if (s.status === 'error') $('hm-wrap').innerHTML = '<p class="detail-empty">Could not load poems.</p>'; return; }
-    if (!Q) Q = buildQuarters(s.data);
+    if (!QA) { POEMS = s.data; QA = buildQuarters(POEMS); }
+    if (st.year && !years().includes(st.year)) st.year = null;
+    Q = st.year ? buildMonths(st.year) : QA;
+    const u = U(), ys = years();
+    $('hm-title').textContent = st.year ? `${st.year} by month: share of each month's poems, by theme` : "Share of each quarter's poems, by theme";
+    $('hm-note').textContent = st.year
+      ? `Top bar: poems written that month. Faded cells come from months with few poems. Use the buttons to step through years, or go back to all years.`
+      : `Top bar: poems written that quarter. Faded cells come from quarters with few poems, where one poem swings the share a lot. Click a year to see it month by month.`;
+    $('y-nav').hidden = !st.year;
+    $('y-prev').disabled = !st.year || ys.indexOf(st.year) <= 0; $('y-next').disabled = !st.year || ys.indexOf(st.year) >= ys.length - 1;
+    if (st.year) { const i = ys.indexOf(st.year); $('y-prev').textContent = `‹ ${ys[i - 1] ?? ''}`.trim(); $('y-next').textContent = `${ys[i + 1] ?? ''} ›`.trim(); }
+    $('f-min-lab').textContent = `Fade ${u}s with fewer than`;
+    $('th-peak').textContent = `Peak ${u}`; $('th-latest').textContent = `Latest ${u}`;
+    $('sum-note').textContent = st.year ? `Within ${st.year}. Peak month counts only months with at least the number of poems chosen above.` : 'Peak quarter counts only quarters with at least the number of poems chosen above.';
     if (!Q.quarters.length) { $('hm-wrap').innerHTML = '<p class="detail-empty">No dated poems.</p>'; return; }
     let rows = stats(GROUPS[st.group][1]);
     if (st.sort === 'alpha') rows.sort((a, b) => a.theme.localeCompare(b.theme));
@@ -529,6 +563,12 @@ sb.auth.onAuthStateChange((event, session) => {
       const sh = (cs) => { const t = cs.reduce((a, c) => a + c.total, 0); return t ? cs.reduce((a, c) => a + c.n, 0) / t : 0; };
       return { theme: r.theme, d: sh(recent) - sh(early) }; }).sort((a, b) => b.d - a.d)[0];
     const k = (label, v, sub) => `<div class="kpi"><div class="k">${label}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`;
+    if (st.year) {
+      $('kpis').innerHTML = k(`Poems in ${st.year}`, Q.dated.toLocaleString(), `${filled.length} month${filled.length === 1 ? '' : 's'} with poems`)
+        + k('Busiest month', busiest.key, `${busiest.poems.length.toLocaleString()} poems`)
+        + (top ? k(`Most common theme in ${st.year}`, esc(top.theme), `${pct(top.overall)} of that year's poems`) : '');
+      return;
+    }
     $('kpis').innerHTML = k('Quarters with poems', filled.length.toLocaleString(), `${qs[0].key} to ${qs[qs.length - 1].key}`)
       + k('Busiest quarter', busiest.key, `${busiest.poems.length.toLocaleString()} poems`)
       + (top ? k('Most common theme here', esc(top.theme), `${pct(top.overall)} of dated poems`) : '')
@@ -542,11 +582,11 @@ sb.auth.onAuthStateChange((event, session) => {
     const labelW = narrow ? 84 : 104, barH = 46, gap = 10, rowH = 20;
     const avail = Math.max(120, (host.clientWidth || 900) - labelW);
     // Every quarter fits in the available width; no sideways scrolling.
-    const cw = Math.min(26, (avail - 2) / nQ), pad = cw >= 6 ? 1 : 0;
+    const cw = Math.min(st.year ? 90 : 26, (avail - 2) / nQ), pad = cw >= 6 ? (cw >= 40 ? 2 : 1) : 0;
     const W = Math.floor(cw * nQ + 2), H = barH + gap + rows.length * rowH + 26;
     const lab = d3.select(host).append('svg').attr('width', labelW).attr('height', H).attr('aria-hidden', 'true');
     const wrap = host.appendChild(document.createElement('div')); wrap.className = 'scroller';
-    const svg = d3.select(wrap).append('svg').attr('width', W).attr('height', H).attr('role', 'img').attr('aria-label', 'Heatmap of theme share by quarter');
+    const svg = d3.select(wrap).append('svg').attr('width', W).attr('height', H).attr('role', 'img').attr('aria-label', st.year ? `Heatmap of theme share by month in ${st.year}` : 'Heatmap of theme share by quarter');
     const x = (i) => i * cw;
     const color = dash.colors[0];
     const maxShare = d3.quantile(rows.flatMap(r => r.cells.filter(c => c.total >= st.min).map(c => c.share)).sort(d3.ascending), 0.97) || 0.01;
@@ -562,16 +602,25 @@ sb.auth.onAuthStateChange((event, session) => {
       .attr('rx', Math.min(2, cw / 4)).attr('fill', d => st.sel && st.sel.k === d.k ? 'var(--color-fg-muted)' : 'var(--cds-chart-muted)')
       .on('mousemove', (ev, d) => showTip(ev, `<b>${d.key}</b><br><span class="k">${d.poems.length} poems · click for all themes</span>`)).on('mouseleave', hideTip)
       .on('click', (ev, d) => { if (d.poems.length) select(d.k, null); });
-    // Year separators and labels
+    // Axis: year labels (click one to see that year by month), or month labels inside a year
     const top = barH + gap, bottom = top + rows.length * rowH;
-    const yearStep = cw * 4 >= 34 ? 1 : cw * 4 >= 17 ? 2 : 5;
-    qs.forEach((q, i) => {
-      if (q.q !== 1 && i !== 0) return;
-      if (i > 0) svg.append('line').attr('x1', x(i)).attr('x2', x(i)).attr('y1', top - 2).attr('y2', bottom + 2).attr('stroke', 'var(--cds-chart-grid)');
+    if (st.year) {
+      qs.forEach((m, i) => svg.append('text').attr('x', x(i) + cw / 2).attr('y', bottom + 16).attr('text-anchor', 'middle').text(cw >= 30 ? MON[i] : MON[i][0]));
+    } else {
+      const yearStep = cw * 4 >= 34 ? 1 : cw * 4 >= 17 ? 2 : 5;
       const firstStep = qs.findIndex(o => o.q === 1 && o.y % yearStep === 0);
-      const show = q.y % yearStep === 0 ? q.q === 1 : (i === 0 && (firstStep < 0 || x(firstStep) - x(0) >= 32));
-      if (show) { const t = svg.append('text').attr('y', bottom + 16).text(q.y); if (x(i) + 30 > W) t.attr('x', W).attr('text-anchor', 'end'); else t.attr('x', x(i) + 1); }
-    });
+      const spans = d3.groups(qs.map((q, i) => ({ q, i })), d => d.q.y);
+      spans.forEach(([y, items]) => {
+        const i0 = items[0].i, i1 = items[items.length - 1].i, n = items.reduce((a, d) => a + d.q.poems.length, 0);
+        if (i0 > 0) svg.append('line').attr('x1', x(i0)).attr('x2', x(i0)).attr('y1', top - 2).attr('y2', bottom + 2).attr('stroke', 'var(--cds-chart-grid)');
+        const first = items[0].q;
+        const show = y % yearStep === 0 ? first.q === 1 : (i0 === 0 && (firstStep < 0 || x(firstStep) - x(0) >= 32));
+        if (n) svg.append('rect').attr('class', 'yhit').attr('x', x(i0)).attr('y', bottom + 3).attr('width', x(i1 + 1) - x(i0)).attr('height', 18).attr('rx', 3)
+          .on('mousemove', (ev) => showTip(ev, `<b>${y}</b><br><span class="k">${n} poems · click to see by month</span>`)).on('mouseleave', hideTip)
+          .on('click', () => setYear(y));
+        if (show) { const t = svg.append('text').attr('class', 'ylab' + (n ? ' link' : '')).attr('y', bottom + 16).text(y); if (x(i0) + 30 > W) t.attr('x', W).attr('text-anchor', 'end'); else t.attr('x', x(i0) + 1); }
+      });
+    }
     // Rows
     const g = svg.append('g');
     rows.forEach((r, ri) => {
@@ -588,7 +637,7 @@ sb.auth.onAuthStateChange((event, session) => {
     });
     // Ramp legend
     const steps = [0.1, 0.3, 0.5, 0.75, 1].map(t => `<i style="background:${color};opacity:${0.06 + t * 0.94}"></i>`).join('');
-    $('ramp').innerHTML = `<span>0%</span>${steps}<span>${pct(maxShare)}+</span><span style="margin-left:12px"><i class="thin" style="background:${color}"></i> fewer than ${st.min} poems that quarter</span>`;
+    $('ramp').innerHTML = `<span>0%</span>${steps}<span>${pct(maxShare)}+</span><span style="margin-left:12px"><i class="thin" style="background:${color}"></i> fewer than ${st.min} poems that ${U()}</span>`;
   }
 
   function table(rows) {
@@ -598,7 +647,7 @@ sb.auth.onAuthStateChange((event, session) => {
       + `<td class="n hide-narrow">${r.latest ? `${pct(r.latest.share)} <span class="m">${r.latest.q.key}</span>` : '—'}</td></tr>`).join('');
   }
 
-  // Quarter detail: every theme in the chosen quarter, each opening to its poems.
+  // Period detail: every theme in the chosen quarter (or month), each opening to its poems.
   const ALL_THEMES = [...new Set([...CONSTS.TOP16, ...Object.values(CONSTS.fam).flatMap(t => t.split(/\s+/))])];
   const THEME_SET = new Set(ALL_THEMES);
   function select(k, theme) {
@@ -610,8 +659,9 @@ sb.auth.onAuthStateChange((event, session) => {
     if (r.top > innerHeight - 120) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   function clearDetail() {
-    $('d-title').textContent = "A quarter's themes"; $('d-nav').hidden = true;
-    $('d-note').textContent = 'Click any quarter in the chart above (a cell or its bar) to see every theme in that quarter. Open a theme to list its poems, and a title to read it.';
+    const u = U();
+    $('d-title').textContent = `A ${u}'s themes`; $('d-nav').hidden = true;
+    $('d-note').textContent = `Click any ${u} in the chart above (a cell or its bar) to see every theme in that ${u}. Open a theme to list its poems, and a title to read it.`;
     $('d-list').innerHTML = '';
   }
   const poemItems = (list) => list.map(p => `<details data-id="${p.id}"><summary>${esc(p.title || 'Untitled')}<span>${p.iso}</span></summary><pre>Loading…</pre></details>`).join('');
@@ -624,13 +674,14 @@ sb.auth.onAuthStateChange((event, session) => {
     const themes = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     const untagged = q.poems.filter(p => !p.tags.some(t => THEME_SET.has(t)));
     $('d-title').textContent = `${q.key}: ${themes.length} theme${themes.length === 1 ? '' : 's'} across ${total} poem${total === 1 ? '' : 's'}`;
-    $('d-note').textContent = `Every theme tag used that quarter, most frequent first, with the share of the quarter's poems carrying it. Open a theme to list its poems.${total < st.min ? ` Only ${total} poem${total === 1 ? '' : 's'} this quarter, so shares move a lot.` : ''}`;
+    const u = U();
+    $('d-note').textContent = `Every theme tag used that ${u}, most frequent first, with the share of the ${u}'s poems carrying it. Open a theme to list its poems.${total < st.min ? ` Only ${total} poem${total === 1 ? '' : 's'} this ${u}, so shares move a lot.` : ''}`;
     $('d-nav').hidden = false;
     const row = (name, n, list, open) => `<details${open ? ' open' : ''}><summary><span>${esc(name)}</span><span class="bar"><i style="width:${(n / total) * 100}%;background:${color}"></i></span><span class="num">${n} · ${pct(n / total)}</span></summary><div class="plist">${poemItems(list)}</div></details>`;
     const byDate = (a, b) => a.iso.localeCompare(b.iso);
-    let html = '<div class="tlist">' + (themes.length ? themes.map(([t, n]) => row(t, n, q.poems.filter(p => p.tags.includes(t)).sort(byDate), t === st.sel.theme)).join('') : '<p class="detail-empty" style="padding:8px 2px">No theme tags on this quarter\'s poems.</p>');
+    let html = '<div class="tlist">' + (themes.length ? themes.map(([t, n]) => row(t, n, q.poems.filter(p => p.tags.includes(t)).sort(byDate), t === st.sel.theme)).join('') : `<p class="detail-empty" style="padding:8px 2px">No theme tags on this ${u}'s poems.</p>`);
     if (untagged.length) html += row('no theme tag', untagged.length, untagged.sort(byDate), false);
-    html += `<div class="grp">All poems this quarter</div>` + row('all poems', total, q.poems.slice().sort(byDate), !st.sel.theme && !themes.length) + '</div>';
+    html += `<div class="grp">All poems this ${u}</div>` + row('all poems', total, q.poems.slice().sort(byDate), !st.sel.theme && !themes.length) + '</div>';
     $('d-list').innerHTML = html;
     $('d-list').querySelectorAll('.plist details').forEach(d => d.addEventListener('toggle', async () => {
       if (!d.open || d.dataset.loaded) return;
@@ -649,7 +700,7 @@ sb.auth.onAuthStateChange((event, session) => {
   $('d-next').addEventListener('click', () => step(1));
 
   let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (dash.data('_poems').status === 'ok') render(); }, 150); });
-  dash.onData(() => { const s = dash.data('_poems'); if (s.status === 'ok') Q = buildQuarters(s.data); render(); });
+  dash.onData(() => { const s = dash.data('_poems'); if (s.status === 'ok') { POEMS = s.data; QA = buildQuarters(POEMS); } render(); });
 })();
 </script>
 </body>
