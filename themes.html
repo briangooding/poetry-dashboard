@@ -102,6 +102,15 @@ svg text.lab { fill: var(--color-fg); font-size: 12px; }
 .tlist .plist details:last-child { border-bottom: none; }
 .tlist .grp { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: 10px 2px 4px; border-bottom: 1px solid var(--color-border-line); }
 .qcol { cursor: pointer; }
+.tagpick { display: flex; align-items: center; gap: 8px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-left: auto; }
+.tagpick select { font: inherit; font-size: 14px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); max-width: 60vw; }
+@media (max-width: 560px) { .tagpick { margin-left: 0; } }
+.tg-stats { display: flex; flex-wrap: wrap; gap: 6px 24px; font-size: 13px; margin: 2px 0 var(--cds-gap-sm); }
+.tg-stats b { font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; }
+.tg-stats span { color: var(--color-fg-muted); }
+.tg-legend { display: flex; gap: 16px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: 6px; }
+.tg-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.tgbar { cursor: pointer; }
 .yhit { cursor: pointer; fill: transparent; }
 .yhit:hover { fill: var(--cds-chart-grid); }
 svg text.ylab { pointer-events: none; }
@@ -159,6 +168,13 @@ table.t td.m { color: var(--color-fg-muted); font-size: 12px; }
   <p class="note" id="hm-note"></p>
   <div class="ramp" id="ramp"></div>
   <div class="hm" id="hm-wrap"><div class="dash-skeleton" style="height:420px;flex:1"></div></div>
+</div>
+<div class="card" id="tagcard">
+  <div class="qhead"><h2 id="tg-title">Any tag over time</h2><label class="tagpick">Tag<select id="f-tag"></select></label><label class="tagpick" style="margin-left:0">Scale<select id="f-scale"><option value="all">Against all poems</option><option value="tag">Fit to this tag</option></select></label></div>
+  <p class="note" id="tg-note">Pick any tag, not just the top themes, to see how many poems carry it in each period.</p>
+  <div class="tg-stats" id="tg-stats"></div>
+  <div class="tg-legend" id="tg-legend"></div>
+  <div class="hm" id="tg-wrap"></div>
 </div>
 <div class="card" id="detail">
   <div class="qhead"><h2 id="d-title">A quarter's themes</h2><div class="qnav" id="d-nav" hidden><button class="btn" type="button" id="d-prev">← Previous</button><button class="btn" type="button" id="d-next">Next →</button></div></div>
@@ -476,10 +492,10 @@ sb.auth.onAuthStateChange((event, session) => {
   const pct = (v) => (v * 100 < 10 && v > 0 ? (v * 100).toFixed(1) : Math.round(v * 100)) + '%';
   const GROUPS = [['Top 16 themes', CONSTS.TOP16]].concat(Object.entries(CONSTS.fam).map(([f, ts]) => [f, ts.split(/\s+/)]));
   GROUPS.forEach(([name], i) => { const o = document.createElement('option'); o.value = i; o.textContent = name; $('f-group').appendChild(o); });
-  const st = { group: 0, sort: 'share', min: 5, sel: null, year: /^#\d{4}$/.test(location.hash) ? +location.hash.slice(1) : null };
-  try { const s = JSON.parse(localStorage.getItem('themes-q-filters') || '{}'); Object.assign(st, { group: s.group ?? 0, sort: s.sort ?? 'share', min: s.min ?? 5 }); } catch (e) {}
+  const st = { group: 0, sort: 'share', min: 5, sel: null, tag: null, scale: 'all', year: /^#\d{4}$/.test(location.hash) ? +location.hash.slice(1) : null };
+  try { const s = JSON.parse(localStorage.getItem('themes-q-filters') || '{}'); Object.assign(st, { group: s.group ?? 0, sort: s.sort ?? 'share', min: s.min ?? 5, tag: s.tag ?? null, scale: s.scale ?? 'all' }); } catch (e) {}
   $('f-group').value = st.group; $('f-sort').value = st.sort; $('f-min').value = st.min;
-  const save = () => { try { localStorage.setItem('themes-q-filters', JSON.stringify({ group: st.group, sort: st.sort, min: st.min })); } catch (e) {} };
+  const save = () => { try { localStorage.setItem('themes-q-filters', JSON.stringify({ group: st.group, sort: st.sort, min: st.min, tag: st.tag, scale: st.scale })); } catch (e) {} };
   $('f-group').addEventListener('change', e => { st.group = +e.target.value; st.sel = null; save(); render(); });
   $('f-sort').addEventListener('change', e => { st.sort = e.target.value; save(); render(); });
   $('f-min').addEventListener('change', e => { st.min = +e.target.value; save(); render(); });
@@ -553,7 +569,7 @@ sb.auth.onAuthStateChange((event, session) => {
     if (st.sort === 'alpha') rows.sort((a, b) => a.theme.localeCompare(b.theme));
     else if (st.sort === 'peak') rows.sort((a, b) => (a.peak ? a.peak.q.k : 1e9) - (b.peak ? b.peak.q.k : 1e9));
     else rows.sort((a, b) => b.overall - a.overall);
-    kpis(rows); heatmap(rows); table(rows);
+    kpis(rows); heatmap(rows); tagChart(); table(rows);
     if (st.sel) detail(); else clearDetail();
   }
 
@@ -653,6 +669,76 @@ sb.auth.onAuthStateChange((event, session) => {
   // Period detail: every theme in the chosen quarter (or month), each opening to its poems.
   const ALL_THEMES = [...new Set([...CONSTS.TOP16, ...Object.values(CONSTS.fam).flatMap(t => t.split(/\s+/))])];
   const THEME_SET = new Set(ALL_THEMES);
+  // Any tag over time: one bar per period, the tag's poems drawn over all poems that period.
+  let tagOpts = '';
+  function fillTags() {
+    const counts = new Map();
+    POEMS.forEach(p => p.tags.forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
+    const list = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    const html = list.map(([t, n]) => `<option value="${esc(t)}">${esc(t)} (${n})</option>`).join('');
+    if (html === tagOpts) return;
+    tagOpts = html; $('f-tag').innerHTML = html;
+    if (!st.tag || !counts.has(st.tag)) st.tag = list.length ? list[0][0] : null;
+    $('f-tag').value = st.tag || '';
+  }
+  $('f-tag').addEventListener('change', e => { st.tag = e.target.value; save(); tagChart(); });
+  $('f-scale').value = st.scale;
+  $('f-scale').addEventListener('change', e => { st.scale = e.target.value; save(); tagChart(); });
+  function tagChart() {
+    const host = $('tg-wrap'); host.innerHTML = '';
+    if (!POEMS) return;
+    fillTags();
+    if (!st.tag) { $('tg-stats').textContent = 'No tags yet.'; return; }
+    host.classList.toggle('centered', !!st.year);
+    const tag = st.tag, u = U(), qs = Q.quarters, color = dash.colors[0], fit = st.scale === 'tag';
+    const data = qs.map(q => { const n = q.poems.filter(p => p.tags.includes(tag)).length; return { q, n, total: q.poems.length }; });
+    const allN = data.reduce((a, d) => a + d.n, 0);
+    const used = data.filter(d => d.n);
+    const ok = data.filter(d => d.n && d.total >= st.min);
+    const peakN = used.length ? used.reduce((a, d) => (d.n > a.n ? d : a)) : null;
+    const peakS = ok.length ? ok.reduce((a, d) => (d.n / d.total > a.n / a.total ? d : a)) : null;
+    const where = st.year ? `in ${st.year}` : 'across all years';
+    $('tg-title').textContent = st.year ? `“${tag}” in ${st.year}, by month` : `“${tag}” by quarter`;
+    $('tg-note').textContent = `Pick any tag, not just the top themes. Each bar is the number of poems carrying the tag that ${u}${fit ? ', scaled to this tag so rare tags are easy to read' : ', drawn over all poems written that ' + u}. Click a bar to see that ${u}'s poems.`;
+    $('tg-stats').innerHTML = `<div><b>${allN.toLocaleString()}</b> <span>poem${allN === 1 ? '' : 's'} ${where} (${pct(Q.dated ? allN / Q.dated : 0)} of ${st.year ? "that year's" : 'dated'} poems)</span></div>`
+      + (used.length ? `<div><span>first</span> <b>${used[0].q.key}</b> <span>· latest</span> <b>${used[used.length - 1].q.key}</b></div>` : '')
+      + (peakN ? `<div><span>most poems</span> <b>${peakN.q.key}</b> <span>(${peakN.n})</span></div>` : '')
+      + (peakS ? `<div><span>highest share</span> <b>${peakS.q.key}</b> <span>(${pct(peakS.n / peakS.total)}, ${peakS.n} of ${peakS.total})</span></div>` : '');
+    $('tg-legend').innerHTML = `<span><i style="background:${color}"></i>poems tagged “${esc(tag)}”</span>${fit ? '' : `<span><i style="background:var(--cds-chart-grid)"></i>all poems that ${u}</span>`}`;
+    const narrow = (host.clientWidth || 900) < 560;
+    const labelW = narrow ? 84 : 104, H0 = 150, axis = 22;
+    const avail = Math.max(120, (host.clientWidth || 900) - labelW);
+    const nQ = qs.length, cw = Math.min(st.year ? 90 : 26, (avail - 2) / nQ), pad = cw >= 6 ? (cw >= 40 ? 2 : 1) : 0;
+    const W = Math.floor(cw * nQ + 2), H = H0 + axis;
+    const maxT = (fit ? d3.max(data, d => d.n) : d3.max(data, d => d.total)) || 1;
+    const y = d3.scaleLinear().domain([0, maxT]).nice(4).range([H0, 6]);
+    const lab = d3.select(host).append('svg').attr('width', labelW).attr('height', H).attr('aria-hidden', 'true');
+    y.ticks(4).filter(Number.isInteger).forEach(t => lab.append('text').attr('x', labelW - 8).attr('y', y(t) + 4).attr('text-anchor', 'end').text(t));
+    lab.append('text').attr('x', labelW - 8).attr('y', H0 + 16).attr('text-anchor', 'end').text('poems');
+    const wrap = host.appendChild(document.createElement('div')); wrap.className = 'scroller';
+    const svg = d3.select(wrap).append('svg').attr('width', W).attr('height', H).attr('role', 'img').attr('aria-label', `Poems tagged ${tag} per ${u}`);
+    y.ticks(4).filter(Number.isInteger).forEach(t => svg.append('line').attr('x1', 0).attr('x2', W).attr('y1', y(t)).attr('y2', y(t)).attr('stroke', 'var(--cds-chart-grid)'));
+    const x = (i) => i * cw, bw = Math.max(0.5, cw - 2 * pad), r = Math.min(3, bw / 3);
+    const g = svg.selectAll('g.tgcol').data(data).join('g').attr('class', 'tgbar');
+    if (!fit) g.append('rect').attr('x', (d, i) => x(i) + pad).attr('width', bw).attr('y', d => y(d.total)).attr('height', d => H0 - y(d.total)).attr('rx', r).attr('fill', 'var(--cds-chart-grid)');
+    g.append('rect').attr('x', (d, i) => x(i) + pad).attr('width', bw).attr('y', d => y(d.n)).attr('height', d => H0 - y(d.n)).attr('rx', r).attr('fill', color);
+    g.append('rect').attr('x', (d, i) => x(i)).attr('width', cw).attr('y', 0).attr('height', H0).attr('fill', 'transparent')
+      .on('mousemove', (ev, d) => showTip(ev, `<b>${d.q.key} · ${esc(tag)}</b><br>${d.n} of ${d.total} poems <span class="k">(${pct(d.total ? d.n / d.total : 0)})${d.total ? ' · click to list' : ''}</span>`))
+      .on('mouseleave', hideTip)
+      .on('click', (ev, d) => { if (d.total) select(d.q.k, tag); });
+    // axis labels, same as the heatmap
+    if (st.year) qs.forEach((m, i) => svg.append('text').attr('x', x(i) + cw / 2).attr('y', H0 + 16).attr('text-anchor', 'middle').text(cw >= 30 ? MON[i] : MON[i][0]));
+    else {
+      const yearStep = cw * 4 >= 34 ? 1 : cw * 4 >= 17 ? 2 : 5;
+      d3.groups(qs.map((q, i) => ({ q, i })), d => d.q.y).forEach(([yr, items]) => {
+        const i0 = items[0].i, i1 = items[items.length - 1].i, n = items.reduce((a, d) => a + d.q.poems.length, 0);
+        if (n) svg.append('rect').attr('class', 'yhit').attr('x', x(i0)).attr('y', H0 + 3).attr('width', x(i1 + 1) - x(i0)).attr('height', 18).attr('rx', 3)
+          .on('mousemove', (ev) => showTip(ev, `<b>${yr}</b><br><span class="k">click to see by month</span>`)).on('mouseleave', hideTip).on('click', () => setYear(yr));
+        if (yr % yearStep === 0 && items[0].q.q === 1) { const t = svg.append('text').attr('class', 'ylab' + (n ? ' link' : '')).attr('y', H0 + 16).text(yr); if (x(i0) + 30 > W) t.attr('x', W).attr('text-anchor', 'end'); else t.attr('x', x(i0) + 1); }
+      });
+    }
+  }
+
   function select(k, theme) {
     st.sel = { k, theme };
     d3.selectAll('#hm-wrap .cell').classed('sel', c => c.q.k === k && c.theme === theme);
@@ -684,6 +770,8 @@ sb.auth.onAuthStateChange((event, session) => {
     const byDate = (a, b) => a.iso.localeCompare(b.iso);
     let html = '<div class="tlist">' + (themes.length ? themes.map(([t, n]) => row(t, n, q.poems.filter(p => p.tags.includes(t)).sort(byDate), t === st.sel.theme)).join('') : `<p class="detail-empty" style="padding:8px 2px">No theme tags on this ${u}'s poems.</p>`);
     if (untagged.length) html += row('no theme tag', untagged.length, untagged.sort(byDate), false);
+    const others = [...other].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    if (others.length) html += `<div class="grp">Other tags this ${u}</div>` + others.map(([t, n]) => row(t, n, q.poems.filter(p => p.tags.includes(t)).sort(byDate), t === st.sel.theme)).join('');
     html += `<div class="grp">All poems this ${u}</div>` + row('all poems', total, q.poems.slice().sort(byDate), !st.sel.theme && !themes.length) + '</div>';
     $('d-list').innerHTML = html;
     $('d-list').querySelectorAll('.plist details').forEach(d => d.addEventListener('toggle', async () => {
