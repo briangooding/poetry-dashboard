@@ -85,6 +85,16 @@ code{font-family:var(--f-mono);font-size:13px}
 .toplinks{display:flex;gap:18px;font:13px var(--f-mono);margin-bottom:28px}
 .toplinks a{color:var(--teal)}
 .toplinks[hidden]{display:none}
+.cellpoems{margin-top:14px;background:var(--panel);border-radius:4px;padding:12px 16px;font-size:16px}
+.cellpoems[hidden]{display:none}
+.cp-head{display:flex;gap:6px;align-items:baseline;font-family:var(--f-mono);font-size:13px;color:var(--ink-2)}
+.cp-head b{font-family:var(--f-display);font-size:15px;color:var(--ink)}
+.cp-close{margin-left:auto;background:none;border:0;font-size:20px;line-height:1;color:var(--ink-3);cursor:pointer}
+.cellpoems ol{list-style:none;margin:8px 0 0;padding:0;columns:2 260px;column-gap:28px}
+.cellpoems li{break-inside:avoid;padding:2px 0}
+.cp-num{display:inline-block;min-width:3.2em;font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+table.heat td{cursor:pointer}
+table.heat td.sel{outline:2px solid var(--amber);outline-offset:-1px}
 .signout{font:12px var(--f-mono);background:none;border:0;color:var(--ink-3);text-decoration:underline;cursor:pointer;padding:0;margin-top:40px}
 </style>
 </head>
@@ -117,8 +127,9 @@ code{font-family:var(--f-mono);font-size:13px}
 
 <section>
   <h2>Themes, by quarter</h2>
-  <p class="sub">Share of that quarter's poems that use at least one word from each theme's word list. Darker means more poems. These are keyword counts, so treat them as a rough gauge that backs up the close reading rather than replaces it.</p>
+  <p class="sub">Share of that quarter's poems that use at least one word from each theme's word list. Darker means more poems. Click a cell to list its poems. These are keyword counts, so treat them as a rough gauge that backs up the close reading rather than replaces it.</p>
   <div class="heatwrap"><table class="heat" id="heat"></table></div>
+  <div class="cellpoems" id="cellpoems" hidden></div>
 </section>
 
 <section>
@@ -169,7 +180,7 @@ async function boot(){
   document.getElementById('toplinks').hidden=!r.is_owner;
   const stale=[...r.claims_failed.map(c=>c.claim),...r.quotes_missing.map(q=>'excerpt '+q+' no longer found')];
   if(stale.length){const n=document.getElementById('stale');n.hidden=false;n.querySelector('ul').innerHTML=stale.map(s=>'<li>'+s.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</li>').join('')}
-  render(r.data);
+  render(r.data, r);
 }
 document.getElementById('gate-form').addEventListener('submit',async e=>{
   e.preventDefault();const login=e.target.email.value.trim().toLowerCase(), pw=e.target.password.value;
@@ -182,7 +193,7 @@ document.getElementById('gate-form').addEventListener('submit',async e=>{
 document.getElementById('signout').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
 sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'&&page.hidden)boot()});
 let rendered=false;
-function render(DATA){
+function render(DATA, RES){
 if(rendered)return;rendered=true;
 const ERAS = [{"id":"essayist","name":"The essayist's notebook","when":"Dec 2018 to Mar 2019","quarters":["2018-Q4","2019-Q1"],"style":"The longest poems of the whole run, and almost all of them break into stanzas. Titles run long and mock-academic (\"the etiology of pre-modern disease (archaeological summary of the final age of the Anthropocene)\"). The diction is Latinate and argumentative (etiologically, atavistic, egalitarianism), and several poems are written as documents: a sheriff's deputy's notes, an interview transcript, a study abstract with a numbered list.","themes":"Settling into the Queen Anne house and walking San Antonio streets (Hackberry, Broadway, Olmos Basin); Texas and San-Antonio are the stretch's most-used tags. Unemployment. Social and political critique, which the tags call ideology, critique and enlivened-conscripts. The first migraines. Taipei and Hangzhou as memories held against a Texas winter.","quotes":[{"text":"there's a grammar to this anger\nprimed behavior not quite learned"},{"text":"delineating an age wholly rapt in anxiety\nhesitation in decision\nborne of\nexcessive choice polluting the galaxy"},{"text":"today at the house I fixed the windows\nsealed some cracks and tested hinges"}]},{"id":"confession","name":"Confession at the second-story window","when":"Apr to Sep 2019","quarters":["2019-Q2","2019-Q3"],"style":"The poems shrink and turn raw and first-person. The mock documents mostly disappear and the notebook reads as a diary. Profanity arrives (\"—FUCK / I'm so tired\"), and repetition is used as a scream: \"I'm trying\" three times in a row, then eight lines of \"there is no reason\".","themes":"Anhedonia and purposelessness; frustration and purpose are the top tags. A manuscript rejection, an unanswered job application, nightmares, pulling out eyebrows and beard, people living on the street seen from the car. Road trips to Jasper, Louisiana, Waco, Brownsville and Illinois. A move (\"new address again\") after which the footers shift from Queen Anne to 1007 Ct. and the Roots coffee shop.","quotes":[{"text":"where is the joy in the spontaneity of experience\nof living among others"},{"text":"anhedonic day, bad news about manuscript\nfelt relieved or slightly better somehow\nmaybe just no longer hoping"},{"text":"two hundred days in\nis the effort for purpose\na cloud spitting its way back to earth"}]},{"id":"muse","name":"Winter light and an unnamed muse","when":"Oct 2019 to Mar 2020","quarters":["2019-Q4","2020-Q1"],"style":"Fewer stanza breaks, and a more painterly eye: angles of light, November mornings, ambient sound, \"Edward Hopper ambiance\". Words of calm and breath climb to about one poem in five, up from about one in eight in the spring. The craft becomes visible too: links to em-dash usage guides are pasted into two poems (12.19.19 and 01.31.20).","themes":"Infatuation peaks; the tag an-unnamed-person appears 15 times in Oct to Dec 2019, and Sarah's name first appears struck through (10.15.19). A December trip to San Diego. Dreams and a quiet holiday alone. In March 2020 the mood drops sharply, with the poems' darkest thoughts of not wanting to live, as the pandemic begins.","quotes":[{"text":"Edward Hopper ambiance, [blurs into this] November morning\nlulling routine of cloudy awareness"},{"text":"I'm more drawn\nto learning your name\nthan to any aspiration"},{"text":"trip down wild atmosphere\neerie gloom upon us and\nI just feel more restless"}]},{"id":"pandemic","name":"Pandemic patio","when":"Apr to Dec 2020","quarters":["2020-Q2","2020-Q3","2020-Q4"],"style":"The leanest stretch: the fewest lines per poem, and only about a third of poems break into stanzas. Revision marks (brackets, strike-throughs, ???) fall by half. Tagging starts to lapse. Many poems are four to six short lines of observation from the same seat at Roots or its parking lot.","themes":"Unemployment, and the pandemic as background boredom (\"various responses to a boring plague\"). A May road trip through the Panhandle and Wichita Falls. The savanna and the jungle become an inner landscape. Nature words nearly double in summer. In autumn and winter the seasons take over, along with Molly the dog and memories of Wageningen, Bremen and Taipei. The notebook's namesake appears in a Shanghai alley.","quotes":[{"text":"I filed for unemployment this morning\n[same day] and somebody insisted I was a poet"},{"text":"this entire pandemic (and before) there's been a dime sitting in the corner against the wall and the bar"},{"text":"I see a creature on the lotus\nblack then white then black\nflooding over me, a familiar face\nthe dragonfly"}]},{"id":"outpouring","name":"The winter outpouring","when":"Jan to Mar 2021","quarters":["2021-Q1"],"style":"An abrupt reversal. Poems lengthen to the levels of early 2019, two-thirds break into stanzas again, and several run past 15 lines: the funeral elegy \"swamp and forest\" and the 32-line invective \"roots grown over a statue's feet\", the longest poem in the notebook. Sentences get longer and narrate whole scenes. Profanity is back at its highest rate.","themes":"Panic attacks named outright, insomnia \"from the hours of 02:00 to 04:00\", a clonazepam prescription, the February 2021 freeze (a run of snow poems, 02.14 to 02.18; weather words reach their high for the notebook), and writing to Sarah against one's own advice. Self-instruction peaks here too. The stretch closes on a turn: \"I let go / of 35 years\".","quotes":[{"text":"I wrote her anyway\nI tried not to and failed\nand I will try not to and fail again"},{"text":"I tried to play a violin with warped strings\nat your funeral today"},{"text":"I let go\nof 35 years\nsoaked in humiliation"}]},{"id":"mantras","name":"Mantras and the savanna","when":"Apr to Sep 2021","quarters":["2021-Q2","2021-Q3"],"style":"Back to short poems, and the lines themselves get shorter. A new register settles in: instructions to the self, in the language of therapy and meditation. Self-coaching words stay high through the spring, then fall away in the summer heat.","themes":"Isolation words reach their highest of any full quarter, along with anhedonia and a new writing spot at a Starbucks on Martin. Then summer: nature at its highest, with bald cypress, egrets, cicadas, and a zebra and lion on an imagined savanna. Violence words climb back to their 2020 high in the same heat. Poem 1000 lands on 09.26.21.","quotes":[{"text":"I can practice being confident and\naware in a more valuable experiential\nand less perfectionistic and rigid way"},{"text":"think about a zebra being chased\nby a lion on the savanna\nwordless interpretation"},{"text":"may all violent endings\nenter the calm transcendence and clarity\nof morning"}]},{"id":"home","name":"Brief poems from home","when":"Oct 2021 to Mar 2022","quarters":["2021-Q4","2022-Q1"],"style":"The plainest writing in the notebook: the shortest lines and the fewest stanza breaks and revision marks. Nearly everything is written at home (1007 Ct.). In late 2021 {tag:2021-Q4} of poems carry tags (summer 2021: {tag:2021-Q3}); the 2022 poems were tagged later in a revisit pass, nearly all with Texas, and brief becomes more common than anywhere else in the notebook.","themes":"Posture and the body as a daily project; body words reach their high in early 2022. Memory words at their highest of any full quarter in late 2021: Berlin, a Rotterdam winter, a silk market \"seven thousand miles away\". Renouncing a name, and addressing oneself by name. The notebook ends where its title points, on a dragonfly (Epitheca, the baskettail) basking before the trees flower.","quotes":[{"text":"this isn't about—I'll never write your name again"},{"text":"I'm waiting\nfor something—unnecessary\nlet go, Brian"},{"text":"six legs hanging down\nbrown on brown\nbefore the trees flower\nEpitheca basking"}]}];
 const Q = DATA.quarters;
@@ -243,9 +254,24 @@ let hdr='<tr><th></th>'+Q.map(r=>`<th class="q">${r.quarter}</th>`).join('')+'</
 const maxV=Math.max(...Q.flatMap(r=>Object.values(r.themes)));
 const rows=themes.map(t=>'<tr><th>'+t+'</th>'+Q.map(r=>{const v=r.themes[t];const p=Math.round(100*Math.min(1,v/maxV));
   const ink=p>55?'var(--paper)':'var(--ink-2)';
-  return `<td tabindex="0" data-tip="${r.quarter} · ${t}: ${v}% of ${r.poems} poems" style="background:color-mix(in srgb,var(--heat1) ${p}%,var(--heat0));color:${ink}">${Math.round(v)}</td>`}).join('')+'</tr>').join('');
+  return `<td tabindex="0" role="button" data-q="${r.quarter}" data-t="${t}" data-tip="${r.quarter} · ${t}: ${v}% of ${r.poems} poems" style="background:color-mix(in srgb,var(--heat1) ${p}%,var(--heat0));color:${ink}">${Math.round(v)}</td>`}).join('')+'</tr>').join('');
 tb.innerHTML=hdr+rows;
 tb.querySelectorAll('td').forEach(td=>{td.addEventListener('pointermove',e=>showTip(e,td.dataset.tip));td.addEventListener('pointerleave',hideTip)});
+const PL=(RES&&RES.poem_list)||[], TORD=(RES&&RES.theme_order)||[];
+const cp=document.getElementById('cellpoems');
+function showCell(td){
+  const q=td.dataset.q, th=td.dataset.t, bit=TORD.indexOf(th);
+  tb.querySelectorAll('td.sel').forEach(x=>x.classList.remove('sel'));
+  if(cp.dataset.key===q+'|'+th&&!cp.hidden){cp.hidden=true;cp.dataset.key='';return}
+  td.classList.add('sel');cp.dataset.key=q+'|'+th;
+  const list=bit<0?[]:PL.filter(p=>p[2]===q&&(Math.floor(p[3]/2**bit)%2===1));
+  cp.innerHTML=`<div class="cp-head"><b>${esc(th)}</b> · ${q} · ${list.length} poem${list.length===1?'':'s'}<button type="button" class="cp-close" aria-label="Close">×</button></div>`+
+    (list.length?`<ol>${list.map(p=>`<li><span class="cp-num">${p[0]}</span>${esc(p[1])}</li>`).join('')}</ol>`:'<p>No poems.</p>');
+  cp.hidden=false;cp.querySelector('.cp-close').onclick=()=>{cp.hidden=true;cp.dataset.key='';td.classList.remove('sel')};
+  cp.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+tb.addEventListener('click',e=>{const td=e.target.closest('td');if(td)showCell(td)});
+tb.addEventListener('keydown',e=>{const td=e.target.closest('td');if(td&&(e.key==='Enter'||e.key===' ')){e.preventDefault();showCell(td)}});
 const fill=s=>s.replace(/\{tag:(\d{4}-Q\d)\}/g,(m,q)=>{const r=Q.find(x=>x.quarter===q);return r?Math.round(r.tagged_pct)+'%':'?'});
 const eh=document.getElementById('eras');
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
