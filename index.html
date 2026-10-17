@@ -391,6 +391,25 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
       </div>
     </div>
   </section>
+
+  <section class="pz-sec" id="appendix-untagged">
+    <h2>Appendix H: poems with no tags<span id="unt-total"></span></h2>
+    <div class="pz-card" id="card-untagged">
+      <p class="note" style="margin-top:0">Every poem with no tags at all, by the date in its title.</p>
+      <div class="pz-tools"><input type="search" id="unt-q" placeholder="Search titles, dates, places or notebooks" aria-label="Search poems with no tags"><span class="cnt" id="unt-cnt"></span></div>
+      <div class="pz-tablebox">
+        <table class="pz-table" id="tbl-untagged" data-source="untagged" data-row-key="id">
+          <thead><tr>
+            <th data-field="title"><button type="button" data-k="title">Title</button></th>
+            <th data-field="written"><button type="button" data-k="written">Written</button></th>
+            <th data-field="location" class="hide-narrow"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow hide-mid"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
   <div class="pz-modal" id="poem-modal" hidden>
     <div class="pz-modal-box" role="dialog" data-source="poem" aria-modal="true" aria-labelledby="pm-title">
       <button type="button" class="pz-modal-close" id="pm-close" aria-label="Close">×</button>
@@ -549,6 +568,8 @@ function computeDatasets(rows, C, now = new Date()) {
   out.unfinished = tagged('not-finished');
   out.poets = tagged('referencing-poets');
   out.second = tagged('second-pass');
+  out.untagged = poems.filter(p => !p.tags.length).sort(byDateThenTitle).map(p => ({
+    id: p.id, title: p.title, written: iso(p.d), location: p.loc ?? (p.country !== 'Unknown' ? p.country : null), filed_in: filed(p) }));
 
   const card = (p, extra) => p ? [{
     id: p.id, title: p.title, written: longDate(p.d0), time: p.hm ? `${p.hm.slice(0, 2)}:${p.hm.slice(2, 4)}` : null,
@@ -590,7 +611,7 @@ const fromSupabase = ({ answer }) => {
   if (!m) throw new Error(text.slice(0, 300));
   return JSON.parse(m[1]);
 };
-['summary', 'by_year', 'month_weekday', 'hours', 'themes', 'theme_eras', 'countries', 'place_tags', 'country_years', 'unlocated', 'latest', 'revisit', 'brief', 'collection', 'unfinished', 'updated', 'poets', 'second', 'poem'].forEach(id =>
+['summary', 'by_year', 'month_weekday', 'hours', 'themes', 'theme_eras', 'countries', 'place_tags', 'country_years', 'unlocated', 'latest', 'revisit', 'brief', 'collection', 'unfinished', 'updated', 'poets', 'second', 'untagged', 'poem'].forEach(id =>
   dash.loader(id, { description: 'Reads the JSON rows out of Supabase’s execute_sql answer.', fn: fromSupabase }));
 
 dash.calc('unlocated_counts', {
@@ -892,6 +913,8 @@ dash.calc('highlights', {
     cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
   const draw_second = makeTable({ source: 'second', table: 'tbl-second', q: 'sec-q', cnt: 'sec-cnt', total: 'sec-total', empty: 'No poems have the "second-pass" tag yet.',
     cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
+  const draw_untagged = makeTable({ source: 'untagged', table: 'tbl-untagged', q: 'unt-q', cnt: 'unt-cnt', total: 'unt-total', empty: 'Every poem has at least one tag.',
+    cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
 
   function drawPoemCard(pre) {
     const box = $(pre);
@@ -926,7 +949,7 @@ dash.calc('highlights', {
   }
   // Full text loads only when a title is clicked.
   function findRow(id) {
-    for (const src of ['latest', 'updated', 'poem_texts', 'unlocated', 'revisit', 'brief', 'collection', 'unfinished', 'poets', 'second']) {
+    for (const src of ['latest', 'updated', 'poem_texts', 'unlocated', 'revisit', 'brief', 'collection', 'unfinished', 'poets', 'second', 'untagged']) {
       const s = dash.data(src);
       if (s.status === 'ok' && Array.isArray(s.data)) { const r = s.data.find(x => String(x.id) === String(id)); if (r) return r; }
     }
@@ -1028,6 +1051,7 @@ dash.calc('highlights', {
     draw_unfinished();
     draw_poets();
     draw_second();
+    draw_untagged();
     if ((r = state($('ch-theme-eras'), 'theme_eras'))) grid($('ch-theme-eras'), r, 'theme', d => d.share, { color: dash.colors[0], label: d => d3.format('.0%')(d.share), tipVal: d => `${d3.format('.1%')(d.share)} of poems (${fmt(d.poems)} of ${fmt(d.total)})`, onPick: PICK && PICK(d => `Poems tagged “${d.theme}”, ${d.era}`, (p, d) => p.era === d.era && p.tags.includes(d.theme)) });
     if ((r = state($('ch-themes'), 'themes'))) {
       legend($('lg-themes'), FAMILIES, famColor);
