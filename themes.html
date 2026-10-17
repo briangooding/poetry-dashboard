@@ -334,6 +334,8 @@ function computeDatasets(rows, C, now = new Date()) {
   out.unfinished = tagged('not-finished');
   out.poets = tagged('referencing-poets');
   out.second = tagged('second-pass');
+  out.untagged = poems.filter(p => p.tags.length && p.tags.every(t => /^\d{4}$/.test(t))).sort(byDateThenTitle).map(p => ({
+    id: p.id, title: p.title, written: iso(p.d), location: p.loc ?? (p.country !== 'Unknown' ? p.country : null), filed_in: filed(p) }));
 
   const card = (p, extra) => p ? [{
     id: p.id, title: p.title, written: longDate(p.d0), time: p.hm ? `${p.hm.slice(0, 2)}:${p.hm.slice(2, 4)}` : null,
@@ -508,6 +510,8 @@ sb.auth.onAuthStateChange((event, session) => {
   let Q = null, QA = null, POEMS = null; // Q: the periods on screen (quarters, or one year's months); QA: all quarters
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const U = () => (st.year ? 'month' : 'quarter');
+  // Year tags ("2014") only repeat the date, so they are left out of every tag view here.
+  const noYears = (ps) => ps.map(p => ({ ...p, tags: p.tags.filter(t => !/^\d{4}$/.test(t)) }));
   function buildMonths(year) {
     const months = MON.map((m, i) => ({ k: year * 12 + i, y: year, m: i + 1, key: `${m} ${year}`, poems: [] }));
     POEMS.forEach(p => { if (p.iso && +p.iso.slice(0, 4) === year) months[+p.iso.slice(5, 7) - 1].poems.push(p); });
@@ -550,7 +554,7 @@ sb.auth.onAuthStateChange((event, session) => {
   function render() {
     const s = dash.data('_poems');
     if (s.status !== 'ok') { if (s.status === 'error') $('hm-wrap').innerHTML = '<p class="detail-empty">Could not load poems.</p>'; return; }
-    if (!QA) { POEMS = s.data; QA = buildQuarters(POEMS); }
+    if (!QA) { POEMS = noYears(s.data); QA = buildQuarters(POEMS); }
     if (st.year && !years().includes(st.year)) st.year = null;
     Q = st.year ? buildMonths(st.year) : QA;
     const u = U(), ys = years();
@@ -791,7 +795,7 @@ sb.auth.onAuthStateChange((event, session) => {
   $('d-next').addEventListener('click', () => step(1));
 
   let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (dash.data('_poems').status === 'ok') render(); }, 150); });
-  dash.onData(() => { const s = dash.data('_poems'); if (s.status === 'ok') { POEMS = s.data; QA = buildQuarters(POEMS); } render(); });
+  dash.onData(() => { const s = dash.data('_poems'); if (s.status === 'ok') { POEMS = noYears(s.data); QA = buildQuarters(POEMS); } render(); });
 })();
 </script>
 </body>

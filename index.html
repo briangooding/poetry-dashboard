@@ -393,10 +393,10 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
   </section>
 
   <section class="pz-sec" id="appendix-untagged">
-    <h2>Appendix H: poems with no tags<span id="unt-total"></span></h2>
+    <h2>Appendix H: poems with no tags besides the year tag<span id="unt-total"></span></h2>
     <div class="pz-card" id="card-untagged">
-      <p class="note" style="margin-top:0">Every poem with no tags at all, by the date in its title.</p>
-      <div class="pz-tools"><input type="search" id="unt-q" placeholder="Search titles, dates, places or notebooks" aria-label="Search poems with no tags"><span class="cnt" id="unt-cnt"></span></div>
+      <p class="note" style="margin-top:0">Every poem whose only tag is its year tag (for example "2014"), by the date in its title.</p>
+      <div class="pz-tools"><input type="search" id="unt-q" placeholder="Search titles, dates, places or notebooks" aria-label="Search poems with no tags besides the year tag"><span class="cnt" id="unt-cnt"></span></div>
       <div class="pz-tablebox">
         <table class="pz-table" id="tbl-untagged" data-source="untagged" data-row-key="id">
           <thead><tr>
@@ -568,7 +568,7 @@ function computeDatasets(rows, C, now = new Date()) {
   out.unfinished = tagged('not-finished');
   out.poets = tagged('referencing-poets');
   out.second = tagged('second-pass');
-  out.untagged = poems.filter(p => !p.tags.length).sort(byDateThenTitle).map(p => ({
+  out.untagged = poems.filter(p => p.tags.length && p.tags.every(t => /^\d{4}$/.test(t))).sort(byDateThenTitle).map(p => ({
     id: p.id, title: p.title, written: iso(p.d), location: p.loc ?? (p.country !== 'Unknown' ? p.country : null), filed_in: filed(p) }));
 
   const card = (p, extra) => p ? [{
@@ -913,7 +913,7 @@ dash.calc('highlights', {
     cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
   const draw_second = makeTable({ source: 'second', table: 'tbl-second', q: 'sec-q', cnt: 'sec-cnt', total: 'sec-total', empty: 'No poems have the "second-pass" tag yet.',
     cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
-  const draw_untagged = makeTable({ source: 'untagged', table: 'tbl-untagged', q: 'unt-q', cnt: 'unt-cnt', total: 'unt-total', empty: 'Every poem has at least one tag.',
+  const draw_untagged = makeTable({ source: 'untagged', table: 'tbl-untagged', q: 'unt-q', cnt: 'unt-cnt', total: 'unt-total', empty: 'No poems have only a year tag. Year tags reach this page after the next sync from UpNote.',
     cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
 
   function drawPoemCard(pre) {
