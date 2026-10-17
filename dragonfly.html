@@ -84,6 +84,7 @@ code{font-family:var(--f-mono);font-size:13px}
 .stale ul{margin:4px 0 0;padding-left:18px}
 .toplinks{display:flex;gap:18px;font:13px var(--f-mono);margin-bottom:28px}
 .toplinks a{color:var(--teal)}
+.toplinks[hidden]{display:none}
 .signout{font:12px var(--f-mono);background:none;border:0;color:var(--ink-3);text-decoration:underline;cursor:pointer;padding:0;margin-top:40px}
 </style>
 </head>
@@ -91,15 +92,14 @@ code{font-family:var(--f-mono);font-size:13px}
 <div class="gate" id="gate" hidden>
   <h1>Dragonfly timeline</h1>
   <form id="gate-form">
-    <input name="email" type="email" placeholder="Email" autocomplete="email" required>
+    <input name="email" type="text" placeholder="Email or username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
     <input name="password" type="password" placeholder="Password (leave blank for an email link)" autocomplete="current-password">
     <button type="submit">Sign in</button>
   </form>
   <p id="gate-msg" role="status"></p>
-  <p><a href="index.html">Poetry statistics</a> · <a href="inspiration.html">Inspiration map</a></p>
 </div>
 <div class="wrap" id="page" hidden>
-<nav class="toplinks"><a href="index.html">Poetry statistics</a><a href="inspiration.html">Inspiration map</a></nav>
+<nav class="toplinks" id="toplinks" hidden><a href="index.html">Poetry statistics</a><a href="inspiration.html">Inspiration map</a><a href="themes.html">Themes by quarter</a></nav>
 <header>
   <div class="eyebrow">Dragonfly notebook · Dec 2018 to Mar 2022</div>
   <h1>How the poems changed</h1>
@@ -166,12 +166,15 @@ async function boot(){
   const {data:r,error}=await sb.rpc('dragonfly_timeline');
   if(error){gate.hidden=false;msg.textContent=error.code==='42501'?'This account cannot view the timeline.':'Could not load data: '+error.message;return}
   page.hidden=false;
+  document.getElementById('toplinks').hidden=!r.is_owner;
   const stale=[...r.claims_failed.map(c=>c.claim),...r.quotes_missing.map(q=>'excerpt '+q+' no longer found')];
   if(stale.length){const n=document.getElementById('stale');n.hidden=false;n.querySelector('ul').innerHTML=stale.map(s=>'<li>'+s.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</li>').join('')}
   render(r.data);
 }
 document.getElementById('gate-form').addEventListener('submit',async e=>{
-  e.preventDefault();const email=e.target.email.value.trim(), pw=e.target.password.value;
+  e.preventDefault();const login=e.target.email.value.trim().toLowerCase(), pw=e.target.password.value;
+  const isUser=!login.includes('@'), email=isUser?login+'@poetry.invalid':login;
+  if(isUser&&!pw){msg.textContent='Enter your password.';return}
   msg.textContent='Signing in…';
   if(pw){const {error}=await sb.auth.signInWithPassword({email,password:pw});if(error){msg.textContent=error.message;return}msg.textContent='';boot()}
   else{const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split('#')[0],shouldCreateUser:false}});msg.textContent=error?error.message:'Check your email for a sign-in link.'}
