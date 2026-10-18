@@ -45,6 +45,15 @@ Email links only work when the page is opened from its web address, not as a fil
 - The stretch descriptions are written text inside the page. The database checks each of their claims against the live numbers, and if one stops holding, a note under the header says which. Edit that sentence in the `ERAS` text near the bottom of `dragonfly.html`.
 - The metrics, theme word lists, stretch dates, excerpts and claim checks live in the database's `analysis` schema.
 
+## Tag explorer
+
+`tags.html` compares the poems carrying any tag with the whole archive, and optionally with a second tag. It opens at `https://<your-username>.github.io/poetry-dashboard/tags.html` and uses the same sign-in as the other pages.
+
+- Each time it loads it calls the database function `public.tag_explorer()`, which returns one compact row per poem (title, year, length, collection, tags, draft marks and the hour from the footer line). It runs as the signed-in account, so the `poems` row-level security applies: only the owner gets data back, and dragonfly viewers such as `emily` see nothing here.
+- It shows the year spread (count or share of each year), the tags that appear with the chosen tag more or less often than in the archive (lift), length bands, draft marks, hour of writing, collections and a sortable list of the poems. Click a tag in the lift table to explore it, or its B button to compare.
+- Draft marks are text patterns: `~~` struck words, short `[bracketed]` asides (not links), and a leftover `??`. The hour comes from a footer line like `MM.DD.YY HH:MM / place` after the poem's `---`.
+- Your last choice of tags and filters is remembered in this browser. Open `tags.html#send` to start on a given tag.
+
 ## Notes
 
 - Data refreshes each time the page loads; use **Refresh** to reload without signing in again. Your session is remembered in the browser until you click **Sign out**.
