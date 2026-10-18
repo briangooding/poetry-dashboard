@@ -7,18 +7,13 @@
 <style>
 /* Layout: a sticky "lens" bar (tag A, tag B, years) over a two-column board of panels; numbers in mono, words in sans, headings in a book serif. */
 :root{
-  --paper:#f7f6f2; --surface:#ffffff; --ink:#1f1e1b; --ink-2:#55524b; --ink-3:#6b6860; --rule:#e3e0d8; --bad:#c0392b;
-  --a:#2f5fb3; --a-soft:rgba(47,95,179,.12); --b:#b46a0a; --b-soft:rgba(180,106,10,.14); --base:#b3afa5;
+  --paper:#141414; --surface:#1d1d1d; --ink:#ececec; --ink-2:#bdbdbd; --ink-3:#8f8f8f; --rule:#2e2e2e; --bad:#ef7a6b;
+  --a:#5ea3ee; --a-soft:rgba(94,163,238,.16); --b:#f0a640; --b-soft:rgba(240,166,64,.16); --base:#6a6a6a;
   --display:Georgia,"Iowan Old Style","Times New Roman",serif;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --paper:#1b1a18; --surface:#24231f; --ink:#ecebe6; --ink-2:#c4c0b6; --ink-3:#a39f95; --rule:#36342f; --bad:#e57364;
-  --a:#86a8ef; --a-soft:rgba(134,168,239,.16); --b:#eba84c; --b-soft:rgba(235,168,76,.16); --base:#5a5750; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --paper:#1b1a18; --surface:#24231f; --ink:#ecebe6; --ink-2:#c4c0b6; --ink-3:#a39f95; --rule:#36342f; --bad:#e57364;
-  --a:#86a8ef; --a-soft:rgba(134,168,239,.16); --b:#eba84c; --b-soft:rgba(235,168,76,.16); --base:#5a5750; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
@@ -155,7 +150,7 @@ html,body{margin:0}
 const PROJECT = "jblxjixgkfsejzvmbxgb";
 const SQL = String.raw`select json_agg(json_build_array(id, title, extract(year from written)::int, words, lines, collection, manuscript::int, tags, (text like '%~~%')::int, (text ~ '\[[^\]]{2,40}\](?!\()')::int, (text like '%??%')::int, substring(text from E'\n---+\n\\d\\d\\.\\d\\d\\.\\d\\d (\\d\\d):\\d\\d')::int) order by id) as d from public.poems`;
 const BANDS = [["Under 40 words",0,39],["40–79",40,79],["80–119",80,119],["120–199",120,199],["200+",200,1e9]];
-const MARKS = [["s","Struck-through words (~~)"],["b","Bracketed asides [..]"],["q","“??” left in"],["ms","In a manuscript"]];
+const MARKS = [["s","Struck-through (~~)"],["b","Bracketed [asides]"],["q","“??” left in"],["ms","In a manuscript"]];
 
 const S = {rows:[], tagN:new Map(), A:"revisit", B:"", y0:null, y1:null, undated:true,
   yearMode:"count", liftMin:5, liftSort:"lift", hideYears:true, listMode:"A", sortK:"y", sortD:-1, q:"", showAll:false, loadedAt:null};
@@ -329,7 +324,7 @@ function render(){
     + kpi("In a manuscript", arr=>fp(pct(arr.filter(r=>r.ms).length, arr.length)));
   let venn = "";
   if (B){ const a1=A.length-both.length, b1=B.length-both.length, t=a1+both.length+b1;
-    venn = `<div class="venn" aria-label="Overlap"><div style="flex:${a1};background:var(--a-soft);color:var(--a)" title="${esc(S.A)} only">${a1} A only</div><div style="flex:${both.length};background:var(--a);color:var(--surface)" title="both">${both.length} both</div><div style="flex:${b1};background:var(--b-soft);color:var(--b)" title="${esc(S.B)} only">${b1} B only</div></div>`; }
+    venn = `<div class="venn" aria-label="Overlap"><div style="flex:${a1};background:var(--a-soft);color:var(--a)" title="${esc(S.A)} only">${a1} A only</div><div style="flex:${both.length};background:var(--a);color:var(--paper)" title="both">${both.length} both</div><div style="flex:${b1};background:var(--b-soft);color:var(--b)" title="${esc(S.B)} only">${b1} B only</div></div>`; }
 
   /* length + markers */
   const ser = series();
