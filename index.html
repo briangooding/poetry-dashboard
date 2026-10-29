@@ -248,7 +248,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
     <div class="pz-grid two">
       <div class="pz-card" id="card-countries">
         <h3>Where poems were written</h3>
-        <p class="note">From the location line under each poem (e.g. "… / Ten Coffee, Saigon"), or the notebook's country when that line is missing. Unknown means neither says.</p>
+        <p class="note">From the location line under each poem (e.g. "… / Ten Coffee, Saigon"), or the notebook's country when that line is missing. Unknown means neither says. Click a country to see the cities and towns inside it.</p>
         <div class="pz-chart" id="ch-countries" data-source="countries"></div>
       </div>
       <div class="pz-card" id="card-places">
@@ -584,6 +584,7 @@ function computeDatasets(rows, C, now = new Date()) {
     out.theme_eras.push({ theme, era: e, poems: n, total, share: Math.round(n / total * 10000) / 10000 });
   }));
 
+  out.country_locs = [...count(poems, p => p.country + '\u0001' + (p.loc ?? ''))].map(([k, n]) => { const [country, loc] = k.split('\u0001'); return { country, loc: loc || null, poems: n }; });
   out.countries = [...count(poems, p => p.country)].map(([country, n]) => ({ country, poems: n })).sort((a, b) => b.poems - a.poems);
   const cy = count(dated.filter(p => p.country !== 'Unknown'), p => `${p.country}|${year(p)}`);
   out.country_years = [...cy].map(([k, n]) => { const [c, y] = k.split('|'); return { country: c, year: +y, poems: n }; })
@@ -632,7 +633,7 @@ function computeDatasets(rows, C, now = new Date()) {
   };
   out.updated = card(upd, { updated: updatedLabel(upd) });
   out.poem_texts = poems.map(p => card(p)[0]);
-  out._poems = poems.map(p => ({ id: p.id, title: p.title, iso: iso(p.d), year: p.d ? p.d.getUTCFullYear() : null, month: p.d ? p.d.getUTCMonth() + 1 : null, weekday: p.d ? p.d.getUTCDay() : null, hr: p.hr, country: p.country, tags: p.tags, era: p.d ? era(p) : null }));
+  out._poems = poems.map(p => ({ id: p.id, title: p.title, iso: iso(p.d), year: p.d ? p.d.getUTCFullYear() : null, month: p.d ? p.d.getUTCMonth() + 1 : null, weekday: p.d ? p.d.getUTCDay() : null, hr: p.hr, country: p.country, loc: p.loc, tags: p.tags, era: p.d ? era(p) : null }));
   return out;
 }
 
@@ -647,7 +648,7 @@ const fromSupabase = ({ answer }) => {
   if (!m) throw new Error(text.slice(0, 300));
   return JSON.parse(m[1]);
 };
-['summary', 'by_year', 'month_weekday', 'hours', 'themes', 'theme_eras', 'countries', 'place_tags', 'country_years', 'unlocated', 'latest', 'revisit', 'brief', 'collection', 'unfinished', 'updated', 'poets', 'second', 'untagged', 'yearonly', 'poem'].forEach(id =>
+['summary', 'by_year', 'month_weekday', 'hours', 'themes', 'theme_eras', 'countries', 'country_locs', 'place_tags', 'country_years', 'unlocated', 'latest', 'revisit', 'brief', 'collection', 'unfinished', 'updated', 'poets', 'second', 'untagged', 'yearonly', 'poem'].forEach(id =>
   dash.loader(id, { description: 'Reads the JSON rows out of Supabase’s execute_sql answer.', fn: fromSupabase }));
 
 dash.calc('unlocated_counts', {
@@ -779,6 +780,108 @@ dash.calc('highlights', {
       .on('click', (ev, d) => { if (opts.onPick) { tt.hide(); opts.onPick(d); } });
     if (opts.onPick) g.select('text.lab').style('cursor', 'pointer').on('click', (ev, d) => opts.onPick(d));
     g.append('text').attr('x', d => x(d[valKey]) + 6).attr('y', row / 2).attr('dy', '0.32em').text(d => fmt(d[valKey]));
+  }
+
+  // ---- Where poems were written: countries that expand into cities and towns ----
+  // A place is the city or town named in the location line (from the list below). Lines that name only a
+  // spot ("Roots", "Queen Anne") borrow the city that same spot gets elsewhere (2+ times, 75%+ agreement);
+  // otherwise the spot itself is shown ("1007 Ct."), or "<state/country> (no place given)".
+  const CITIES = {
+    USA: ['North Richland Hills|NRH|N Richland Hills', 'Colleyville', 'Hurst', 'Bedford', 'Euless', 'Grapevine', 'Keller', 'Southlake', 'Dallas', 'Fort Worth', 'Arlington|UTA|University of Texas-Arlington', 'Denton', 'Waco', 'Austin', 'San Antonio', 'San Diego', 'Jasper', 'Plano', 'Irving', 'Flower Mound', 'Coppell', 'Del Rio', 'Georgetown', 'San Marcos', 'Jarrell', 'Cleburne', 'New Waverly', 'Adamsville', 'Fort Myers', 'Sanibel Island', 'Denver', 'Tucson', 'Spokane', 'Detroit', 'Wichita Falls', 'Teague', 'Houston', 'Kisatchee National Forest'],
+    Thailand: ['Bangkok|BKK', 'Chiang Mai|CNX', 'Chiang Rai', 'Mae Rim', 'Krabi|Ao Nang', 'Pak Chong', 'Loei', 'Ayutthaya', 'Sukhothai', 'Lamphun', 'Lampang', 'Kaeng'],
+    Vietnam: ['Saigon|SGN|Ho Chi Minh', 'Bao Loc', 'Ba Ria', 'Phu My', 'Da Lat|Dalat', 'Danang|Da Nang', 'Hanoi', 'Vung Tau', 'Hoi An', 'Nha Trang'],
+    Taiwan: ['Taipei|Da-an|Danshuei|Jhongjheng|Xinyi|Yongkang', 'Kaohsiung|Kahsiung', 'Chiayi', 'Taoyuan', 'Taichung', 'Tainan', 'Hsinchu'],
+    China: ['Hangzhou', 'Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Shantou', 'Xiamen'],
+    Netherlands: ['Rotterdam', 'Amsterdam', 'Wageningen'], Germany: ['Berlin'], 'Hong Kong': ['Hong Kong|Kowloon'],
+    Colombia: ['Cali'], 'El Salvador': ['San Luis Talpa'], 'In transit': ['Incheon'],
+  };
+  const CITY_RE = Object.fromEntries(Object.entries(CITIES).map(([c, list]) => [c, list.map(e => { const names = e.split('|'); return { name: names[0], re: new RegExp('(^|[^A-Za-z])(' + names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?![A-Za-z])', 'i') }; })]));
+  const STATE_RE = /(^|,\s*)(Texas|Arkansas|California|Colorado|Florida|Arizona|Michigan|Louisiana|Washington state)\s*$/i;
+  const cityIn = (loc, country) => { const m = (CITY_RE[country] || []).find(c => c.re.test(loc)); return m ? m.name : null; };
+  const venueOf = (loc) => { const v = String(loc).replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+/g, ' ').trim(); return v; };
+  const venueKey = (v) => v.toLowerCase().replace(/[.’'*\[\]]/g, '').replace(/\s+/g, ' ').trim();
+  let placeOf = (loc, country) => loc || 'No location line';
+  function buildPlaces(locRows) {
+    const votes = new Map(), names = new Map();
+    locRows.forEach(r => {
+      if (!r.loc) return;
+      const city = cityIn(r.loc, r.country), v = venueOf(r.loc), k = r.country + '|' + venueKey(v);
+      const nm = names.get(k) || new Map(); nm.set(v, (nm.get(v) || 0) + r.poems); names.set(k, nm);
+      if (city) { const m = votes.get(k) || new Map(); m.set(city, (m.get(city) || 0) + r.poems); votes.set(k, m); }
+    });
+    const learned = new Map();
+    votes.forEach((m, k) => { const tot = d3.sum(m.values()); const [best, n] = [...m].sort((a, b) => b[1] - a[1])[0]; if (n >= 2 && n / tot >= 0.75) learned.set(k, best); });
+    const display = (k) => [...(names.get(k) || new Map())].sort((a, b) => b[1] - a[1])[0]?.[0];
+    const cache = new Map();
+    placeOf = (loc, country) => {
+      if (!loc) return country === 'Unknown' ? 'No location line' : 'Notebook only (no location line)';
+      const ck = country + '|' + loc; if (cache.has(ck)) return cache.get(ck);
+      let out = cityIn(loc, country);
+      if (!out) {
+        const v = venueOf(loc), k = country + '|' + venueKey(v);
+        out = learned.get(k) || null;
+        if (!out) {
+          const st = STATE_RE.exec(loc), vs = /^(Texas|Arkansas|California|Colorado|Florida|Arizona|Michigan|Louisiana|Washington)( state)?$/i.exec(v);
+          const bare = !v || venueKey(v) === country.toLowerCase() || !!vs || /^unknown$/i.test(v);
+          const region = vs ? vs[1] : st ? st[2].replace(/ state$/i, '') : country;
+          out = bare ? `${region} (no place given)` : (display(k) || v);
+        }
+      }
+      cache.set(ck, out); return out;
+    };
+  }
+  const whereOpen = new Set();
+  function drawWhere(el, rows) {
+    const s = dash.data('country_locs');
+    const locs = s.status === 'ok' ? s.data : [];
+    buildPlaces(locs);
+    const byCountry = d3.rollup(locs, v => d3.sum(v, d => d.poems), d => d.country, d => placeOf(d.loc, d.country));
+    const list = [];
+    rows.slice().sort((a, b) => b.poems - a.poems).forEach(c => {
+      const subs = [...(byCountry.get(c.country) || new Map())].map(([place, poems]) => ({ place, poems })).sort((a, b) => b.poems - a.poems || a.place.localeCompare(b.place));
+      const open = whereOpen.has(c.country);
+      list.push({ kind: 'country', country: c.country, poems: c.poems, nsub: subs.length, open });
+      if (!open) return;
+      const TOP = 12, shown = subs.slice(0, TOP), rest = subs.slice(TOP);
+      shown.forEach(d => list.push({ kind: 'place', country: c.country, place: d.place, poems: d.poems, of: c.poems }));
+      if (rest.length) list.push({ kind: 'rest', country: c.country, places: rest.map(d => d.place), poems: d3.sum(rest, d => d.poems), of: c.poems, label: `${rest.length} other place${rest.length === 1 ? '' : 's'}` });
+      if (PICK) list.push({ kind: 'all', country: c.country, poems: c.poems });
+    });
+    clear(el);
+    const W = el.clientWidth || 400, row = 24, H = list.length * row + 4;
+    el.style.minHeight = H + 'px';
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const labelOf = d => d.kind === 'country' ? `${d.nsub ? (d.open ? '▾ ' : '▸ ') : ''}${d.country}` : d.kind === 'place' ? d.place : d.kind === 'rest' ? d.label : `List all poems from ${d.country}`;
+    const ml = Math.min(W * 0.5, measure(svg, list.map(labelOf)) + 22);
+    const mr = measure(svg, list.map(d => fmt(d.poems))) + 8;
+    const x = d3.scaleLinear([0, d3.max(rows, d => d.poems) || 1], [ml, W - mr]);
+    // Places inside a country are scaled to that country's total, so small countries stay readable.
+    const xs = (d) => d.kind === 'country' ? x(d.poems) : ml + (W - mr - ml) * (d.poems / (d.of || 1));
+    const tt = tip(el);
+    const g = svg.selectAll('g').data(list).join('g').attr('transform', (d, i) => `translate(0,${i * row})`);
+    const act = (d) => {
+      tt.hide();
+      if (d.kind === 'country') { if (!d.nsub) return; whereOpen.has(d.country) ? whereOpen.delete(d.country) : whereOpen.add(d.country); drawWhere(el, rows); }
+      else if (!PICK) return;
+      else if (d.kind === 'place') PICK(() => `Poems written in ${d.place}${d.country === 'USA' || d.place.includes(d.country) ? '' : ', ' + d.country}`, (p) => p.country === d.country && placeOf(p.loc, p.country) === d.place)(d);
+      else if (d.kind === 'rest') PICK(() => `Poems from ${d.label} in ${d.country}`, (p) => p.country === d.country && d.places.includes(placeOf(p.loc, p.country)))(d);
+      else PICK(() => d.country === 'Unknown' ? 'Poems with an unknown location' : `Poems written in ${d.country}`, (p) => p.country === d.country)(d);
+    };
+    const clickable = d => d.kind === 'country' ? d.nsub > 0 : !!PICK;
+    g.append('text').attr('class', d => d.kind === 'country' ? 'lab' : null)
+      .attr('x', d => d.kind === 'country' ? ml - 8 : ml - 8).attr('y', row / 2).attr('dy', '0.32em').attr('text-anchor', 'end')
+      .style('font-style', d => d.kind === 'all' || d.kind === 'rest' ? 'italic' : null)
+      .style('cursor', d => clickable(d) ? 'pointer' : null)
+      .text(labelOf).on('click', (ev, d) => act(d));
+    g.filter(d => d.kind !== 'all').append('rect').attr('x', ml).attr('y', d => d.kind === 'country' ? 5 : 8).attr('height', d => d.kind === 'country' ? row - 10 : row - 16)
+      .attr('width', d => Math.max(2, xs(d) - ml)).attr('rx', d => d.kind === 'country' ? 4 : 3)
+      .attr('fill', d => ctyColor(d.country)).attr('fill-opacity', d => d.kind === 'country' ? 1 : 0.55)
+      .style('cursor', d => clickable(d) ? 'pointer' : null)
+      .on('mousemove', (ev, d) => tt.show(ev, d.kind === 'country' ? d.country : d.kind === 'place' ? d.place : `${d.label} in ${d.country}`,
+        `${fmt(d.poems)} poems` + (d.kind !== 'country' ? ` (${d3.format('.0%')(d.poems / d.of)} of ${d.country})` : '') + (d.kind === 'country' ? (d.nsub ? (d.open ? ' · click to collapse' : ` · click to see ${d.nsub} place${d.nsub === 1 ? '' : 's'}`) : '') : (PICK ? ' · click to list' : ''))))
+      .on('mouseleave', () => tt.hide())
+      .on('click', (ev, d) => act(d));
+    g.filter(d => d.kind !== 'all').append('text').attr('x', d => xs(d) + 6).attr('y', row / 2).attr('dy', '0.32em').text(d => fmt(d.poems));
   }
 
   function heat(el, rows, opts = {}) {
@@ -1109,7 +1212,7 @@ dash.calc('highlights', {
       onPick: PICK && PICK(d => `Poems written in ${d.year}`, (p, d) => p.year === d.year)
     });
     if ((r = state($('ch-heat'), 'month_weekday'))) heat($('ch-heat'), r, { onPick: PICK && PICK(d => `Poems written on ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.weekday]}s in ${['January','February','March','April','May','June','July','August','September','October','November','December'][d.month - 1]}`, (p, d) => p.month === d.month && p.weekday === d.weekday) });
-    if ((r = state($('ch-countries'), 'countries'))) hbars($('ch-countries'), r, 'country', 'poems', { color: d => ctyColor(d.country), tipVal: d => `${fmt(d.poems)} poems`, onPick: PICK && PICK(d => d.country === 'Unknown' ? 'Poems with an unknown location' : `Poems written in ${d.country}`, (p, d) => p.country === d.country) });
+    if ((r = state($('ch-countries'), 'countries'))) drawWhere($('ch-countries'), r);
     if ((r = state($('ch-places'), 'place_tags'))) {
       legend($('lg-places'), COUNTRIES.filter(c => r.some(d => d.country === c)), ctyColor);
       hbars($('ch-places'), r, 'place', 'poems', { color: d => ctyColor(d.country), extra: d => d.country, tipVal: d => `${fmt(d.poems)} poems tagged`, onPick: PICK && PICK(d => `Poems tagged “${d.tag || d.place}”`, (p, d) => p.tags.includes(d.tag || d.place)) });

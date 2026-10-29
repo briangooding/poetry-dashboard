@@ -326,6 +326,7 @@ function computeDatasets(rows, C, now = new Date()) {
     out.theme_eras.push({ theme, era: e, poems: n, total, share: Math.round(n / total * 10000) / 10000 });
   }));
 
+  out.country_locs = [...count(poems, p => p.country + '\u0001' + (p.loc ?? ''))].map(([k, n]) => { const [country, loc] = k.split('\u0001'); return { country, loc: loc || null, poems: n }; });
   out.countries = [...count(poems, p => p.country)].map(([country, n]) => ({ country, poems: n })).sort((a, b) => b.poems - a.poems);
   const cy = count(dated.filter(p => p.country !== 'Unknown'), p => `${p.country}|${year(p)}`);
   out.country_years = [...cy].map(([k, n]) => { const [c, y] = k.split('|'); return { country: c, year: +y, poems: n }; })
@@ -374,7 +375,7 @@ function computeDatasets(rows, C, now = new Date()) {
   };
   out.updated = card(upd, { updated: updatedLabel(upd) });
   out.poem_texts = poems.map(p => card(p)[0]);
-  out._poems = poems.map(p => ({ id: p.id, title: p.title, iso: iso(p.d), year: p.d ? p.d.getUTCFullYear() : null, month: p.d ? p.d.getUTCMonth() + 1 : null, weekday: p.d ? p.d.getUTCDay() : null, hr: p.hr, country: p.country, tags: p.tags, era: p.d ? era(p) : null }));
+  out._poems = poems.map(p => ({ id: p.id, title: p.title, iso: iso(p.d), year: p.d ? p.d.getUTCFullYear() : null, month: p.d ? p.d.getUTCMonth() + 1 : null, weekday: p.d ? p.d.getUTCDay() : null, hr: p.hr, country: p.country, loc: p.loc, tags: p.tags, era: p.d ? era(p) : null }));
   return out;
 }
 
