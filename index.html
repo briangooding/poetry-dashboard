@@ -652,8 +652,14 @@ dash.calc('highlights', {
   const FAMILIES = ['Mood', 'Existence', 'Love & body', 'World', 'Imagery'];
   const COUNTRIES = ['USA', 'Thailand', 'Vietnam', 'Taiwan', 'Hong Kong', 'China', 'Netherlands', 'Germany', 'Colombia', 'El Salvador', 'In transit', 'Unknown'];
   const famColor = (f) => dash.colors[Math.max(0, FAMILIES.indexOf(f)) % dash.colors.length];
-  // Eight hues for the eight main countries; any further country shares the neutral gray (its bar is labeled).
-  const ctyColor = (c) => { const i = COUNTRIES.indexOf(c); return (c === 'Unknown' || c === 'In transit' || i < 0 || i >= dash.colors.length) ? 'var(--cds-chart-muted)' : dash.colors[i]; };
+  // The palette's eight hues go to the eight main countries; two extra hues (pink, lavender) cover
+  // Colombia and El Salvador, stepped lighter in dark mode. Bars are labeled, so color is never the only cue.
+  const EXTRA_HUES = matchMedia('(prefers-color-scheme: dark)').matches ? ['#f2a6c6', '#c9a0ec'] : ['#e07fa8', '#b07ad0'];
+  const ctyColor = (c) => {
+    const i = COUNTRIES.indexOf(c), n = dash.colors.length;
+    if (c === 'Unknown' || c === 'In transit' || i < 0) return 'var(--cds-chart-muted)';
+    return i < n ? dash.colors[i] : (EXTRA_HUES[i - n] || 'var(--cds-chart-muted)');
+  };
 
   const $ = (id) => document.getElementById(id);
   function clear(el) { el.replaceChildren(); }
