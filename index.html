@@ -117,6 +117,11 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 .pz-latest-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-heading); margin: var(--cds-gap-sm) 0 var(--cds-gap-xs); }
 .pz-latest-meta { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); line-height: 1.45; }
 .pz-latest-body { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-body); line-height: 1.55; white-space: pre-wrap; margin: 0; max-height: 360px; overflow: auto; min-height: 120px; }
+.pz-latest-body .md-h { font-weight: var(--cds-font-weight-medium); font-size: 1.08em; }
+.pz-latest-body .md-q { color: var(--color-fg-muted); border-left: 2px solid var(--color-border-line); padding-left: .6em; }
+.pz-latest-body del { color: var(--color-fg-muted); }
+.pz-latest-body a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--color-border-line); }
+.pz-latest-body a:hover { text-decoration-color: currentColor; }
 .pz-latest-tags { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-md); }
 .pz-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 760px) { .pz-grid.two { grid-template-columns: 1fr; } }
@@ -159,7 +164,7 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
 </div>
 <div id="app" hidden>
   <div class="wrap">
-    <div class="topbar"><span class="nav"><a href="themes.html">Themes by quarter</a><a href="inspiration.html">Inspiration map</a><a href="dragonfly.html">Dragonfly timeline</a><a href="tags.html">Tag explorer</a></span><span id="stamp"></span><span id="who"></span><button class="btn" id="refresh" type="button">Refresh</button><button class="btn" id="logout" type="button">Sign out</button></div>
+    <div class="topbar"><span class="nav"><a href="themes.html">Themes by quarter</a><a href="inspiration.html">Inspiration map</a></span><span id="stamp"></span><span id="who"></span><button class="btn" id="refresh" type="button">Refresh</button><button class="btn" id="logout" type="button">Sign out</button></div>
     <div class="load-err" id="load-err" hidden></div>
 
 
@@ -936,10 +941,38 @@ dash.calc('highlights', {
     $(`${pre}-title`).textContent = r.title || 'Untitled';
     const meta = [r.written, r.time, r.location].filter(Boolean).join(' · ') + ` · ${fmt(r.words)} words`;
     $(`${pre}-meta`).textContent = r.updated ? `Updated ${r.updated} · written ${meta}` : meta;
-    $(`${pre}-body`).textContent = body.trim();
+    $(`${pre}-body`).innerHTML = mdPoem(body.trim());
     $(`${pre}-tags`).textContent = r.tags ? 'Tags: ' + r.tags : '';
   }
   const drawLatest = () => { drawPoemCard('latest'); drawPoemCard('updated'); };
+
+  // Poems are stored as Markdown (from UpNote): render _italic_, **bold**, ~~strikethrough~~, links,
+  // headings and quotes while keeping every line break. Text is escaped first, so no HTML from a poem runs.
+  function mdPoem(text) {
+    const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const inline = (t) => {
+      const keep = [];
+      const stash = (html) => `\u0000${keep.push(html) - 1}\u0000`;
+      t = t.replace(/\[([^\]\n]*)\]\(([^)\s]+)\)/g, (m, label, url) => {
+        const shown = label.trim() || url;
+        return /^https?:\/\//i.test(url) ? stash(`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(shown)}</a>`) : stash(esc(shown));
+      });
+      t = esc(t);
+      t = t.replace(/\*\*([^*\n]+?)\*\*/g, '<b>$1</b>');
+      t = t.replace(/~~([^~\n]+?)~~/g, '<del>$1</del>');
+      t = t.replace(/(^|[^\w])_([^_\n]+?)_(?=[^\w]|$)/g, '$1<i>$2</i>');
+      t = t.replace(/(^|[^*\w])\*([^*\s][^*\n]*?)\*(?=[^*\w]|$)/g, '$1<i>$2</i>');
+      return t.replace(/\u0000(\d+)\u0000/g, (m, i) => keep[+i]);
+    };
+    return String(text || '').split('\n').map(line => {
+      let m;
+      if ((m = /^\s{0,3}#{1,6}\s+(.*)$/.exec(line))) return `<span class="md-h">${inline(m[1])}</span>`;
+      if ((m = /^\s{0,3}>\s?(.*)$/.exec(line))) return `<span class="md-q">${inline(m[1])}</span>`;
+      if ((m = /^(\s*)[*+]\s+(.*)$/.exec(line))) return `${m[1]}• ${inline(m[2])}`;
+      if (/^\s*(\*\s*){3,}$|^\s*(_\s*){3,}$/.test(line)) return '<hr>';
+      return inline(line);
+    }).join('\n');
+  }
 
   // Poem viewer: click a title to read the poem
   function poemBody(t) {
@@ -960,7 +993,7 @@ dash.calc('highlights', {
   function fillPoem(r, text, note) {
     $('pm-title').textContent = (r && r.title) || 'Untitled';
     $('pm-meta').textContent = r ? [r.written, r.time, r.location].filter(Boolean).join(' · ') + (r.words != null ? ` · ${fmt(r.words)} words` : '') : '';
-    $('pm-body').textContent = note || poemBody(text);
+    if (note) $('pm-body').textContent = note; else $('pm-body').innerHTML = mdPoem(poemBody(text));
     $('pm-body').classList.toggle('dash-skeleton', note === 'Loading…');
     $('pm-tags').textContent = r && r.tags ? 'Tags: ' + r.tags : '';
   }
