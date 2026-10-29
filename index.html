@@ -468,7 +468,7 @@ function computeDatasets(rows, C, now = new Date()) {
   const R = { TW: re(C.TW), VN: re(C.VN), TH: re(C.TH), HK: re('Hong Kong|Kowloon|Macau'), CO: re('Colombia'), SV: re('El Salvador'), CN: re(C.CN), NL: re(C.NL), DE: re(C.DE), TR: re('Incheon'), US: re(C.US) };
 
   function parseDate(sf) {
-    const m = /(\d{2})\.(\d{2})\.(\d{2})(?:\s|\.md|\)|$)/.exec(sf || '');
+    const m = /(\d{2})\.(\d{2})\.(\d{2})(?:\s|\.md|\.\d{3,4}|\)|$)/.exec(sf || '');
     if (!m) return null;
     const mo = +m[1], dd = +m[2], yy = +m[3];
     const y = yy < 70 ? 2000 + yy : 1900 + yy; // Postgres 'YY' rule
@@ -500,10 +500,14 @@ function computeDatasets(rows, C, now = new Date()) {
   }
 
   const poems = rows.filter(r => !(r.tags || []).some(t => EXCLUDE.includes(t))).map(r => {
-    const sf = r.source_file || '';
-    const d0 = parseDate(sf);
-    const hrM = /\d{2}\.\d{2}\.\d{2}\s+(\d{2})\.?\d{2}/.exec(sf);
-    const hmM = /\d{2}\.\d{2}\.\d{2}\s+(\d{2}\.?\d{2})/.exec(sf);
+    // Date and time come from the file title; when the title has none, fall back to the
+    // poem's location line ("07.26.07 18:06 / Denver ..."), which every dated poem carries.
+    const whenLine = r.text != null ? ((/\n[ \t ]*(\d{2}\.\d{2}\.\d{2}(?:\s+\d{1,2}[:.]?\d{2})?)[^\n/]*\//.exec(r.text) || [])[1] || null) : (r.loc_when || null);
+    const fromFile = parseDate(r.source_file || '');
+    const sf = fromFile ? (r.source_file || '') : (whenLine ? whenLine.replace(':', '') + '.md' : '');
+    const d0 = fromFile || parseDate(sf);
+    const hrM = /\d{2}\.\d{2}\.\d{2}[\s.]+(\d{2})\.?\d{2}/.exec(sf);
+    const hmM = /\d{2}\.\d{2}\.\d{2}[\s.]+(\d{2}\.?\d{2})/.exec(sf);
     const locM = r.text != null ? /\n[ \t\u00a0]*\d{2}\.\d{2}\.\d{2}[^\n/]*\/\s*([^\n]+)/.exec(r.text) : null;
     const hr0 = hrM ? +hrM[1] : null;
     const p = {
@@ -1106,7 +1110,7 @@ dash.calc('highlights', {
 <script>
 const CONSTS = {"TW": "Da-an|Jhong|Danshuei|Singfuliao|Xinyi Road|ShiDa|OH CHA CHA|NEXT DOOR|Yaboo|Neighbor.s Cafe|Taipei|Taiwan|Chiayi|Chaiyi|Yongkang|Jinhua|Qingtian|Taoyuan|Taichung|Kaohsiung|Tainan", "VN": "Mekong|Saigon|Bao Loc|Ba Ria|Phu My|Danang|Da Nang|Da Lat|Dalat|SGN|Vietnam|Tỉnh|Hanoi|Vung Tau|Hoi An|Nha Trang", "TH": "Bangkok|BKK|Mae Rim|Krabi|Chiang|Lamphun|Pak Chong|Chom ?Thong|Thailand|Beekeeper|Sukhothai|Lampang|Ao Nang|Samut", "CN": "China|Beijing|Shanghai|Guangzhou|Shenzhen|Shantou|Xiamen", "NL": "Netherlands|Rotterdam|Amsterdam", "DE": "Germany|Berlin", "US": "1007 Ct|Roots|sbux|Starbucks|Queen Anne|Colleyville|Hurst|Bedford|Euless|Grapevine|Keller|Southlake|Dallas|Fort Worth|Arlington|Denton|Waco|Austin|San Antonio|San Diego|Jasper|Texas|, TX|, AR|Arkansas|Florida|Spokane|Tucson|Del Rio|Whole Foods|Somerset|Rampart|Chic-fil-A|Torchy|Greenville|Estate Coffee|Brew.s|Race Street|Trinity|Babylon|Chapp|Scooter|Hampton Inn|Marriott|NRH|CMS|CNC|Amherst|Chisholm|Precinct|Sandy Lake|Smithfield|Mid-Cities|Glade|Broadway|Not Just Pho|Boba Tea|Tandoor|Pho One|Pho Bac|Ahoyama|Executive|Buon Giorno|Flavors Indian|Sweet Magik|Bird Rock|Dichotomy|Trio|SMS|Sierra Springs|Hidden Oaks|Brown Trail|Botanical|Rosa.s|fire station|Colorado|Denver|Michigan|Detroit|Louisiana|Washington state|, USA|Spur 406", "fam": {"Mood": "frustration sadness mania desperation depression anxiety calm loneliness anger isolation", "Love & body": "infatuation lust longing biology blood", "Existence": "purpose death suicide memory dream violence", "World": "nature animal ideology religion political environmental-critique", "Imagery": "visuals aural smell wind sun fire-burn rain"}, "TOP16": ["frustration", "purpose", "violence", "mania", "memory", "sadness", "nature", "death", "suicide", "isolation", "depression", "calm", "infatuation", "anxiety", "lust", "dream"], "PLACE": [["Vietnam", "Vietnam", "Vietnam"], ["Saigon", "Saigon", "Vietnam"], ["Phu-My", "Phu My", "Vietnam"], ["Bao-Loc", "Bao Loc", "Vietnam"], ["Ba-Ria", "Ba Ria", "Vietnam"], ["Danang", "Danang", "Vietnam"], ["Taiwan", "Taiwan", "Taiwan"], ["Taipei", "Taipei", "Taiwan"], ["Chiayi", "Chiayi", "Taiwan"], ["China", "China", "China"], ["Hong-Kong", "Hong Kong", "China"], ["Thailand", "Thailand", "Thailand"], ["Bangkok", "Bangkok", "Thailand"], ["Pak-Chong", "Pak Chong", "Thailand"], ["Mae-Rim", "Mae Rim", "Thailand"], ["Krabi", "Krabi", "Thailand"], ["Lamphun", "Lamphun", "Thailand"], ["Chiang-Mai", "Chiang Mai", "Thailand"], ["Chiang-Rai", "Chiang Rai", "Thailand"], ["San-Antonio", "San Antonio", "USA"], ["San-Diego", "San Diego", "USA"], ["Colleyville", "Colleyville", "USA"], ["Florida", "Florida", "USA"], ["Austin", "Austin", "USA"], ["Waco", "Waco", "USA"], ["Texas", "Texas", "USA"], ["Spokane", "Spokane", "USA"], ["Washington", "Washington", "USA"], ["Del-Rio", "Del Rio", "USA"], ["Netherlands", "Netherlands", "Netherlands"], ["Rotterdam", "Rotterdam", "Netherlands"], ["Germany", "Germany", "Germany"], ["Berlin", "Berlin", "Germany"]]};
 const sb = window.supabase.createClient('https://jblxjixgkfsejzvmbxgb.supabase.co', 'sb_publishable_x2U2s3sp-bvpIM-xG1TTtA_TJv9eNDg', { auth: { persistSession: true, autoRefreshToken: true } });
-const COLS = 'id,title,source_file,tags,words,lines,notebook,collection,upnote_updated_at,last_edited,loc';
+const COLS = 'id,title,source_file,tags,words,lines,notebook,collection,upnote_updated_at,last_edited,loc,loc_when';
 const $id = (i) => document.getElementById(i);
 let loadedOnce = false;
 
