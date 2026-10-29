@@ -269,14 +269,18 @@ function computeDatasets(rows, C, now = new Date()) {
     const d0 = fromFile || parseDate(sf);
     const hrM = /\d{2}\.\d{2}\.\d{2}[\s.]+(\d{2})\.?\d{2}/.exec(sf);
     const hmM = /\d{2}\.\d{2}\.\d{2}[\s.]+(\d{2}\.?\d{2})/.exec(sf);
-    const locM = r.text != null ? /\n[ \t\u00a0]*\d{2}\.\d{2}\.\d{2}[^\n/]*\/\s*([^\n]+)/.exec(r.text) : null;
+    // Location line: "<date or 'unknown date'> / place"; failing that, the first line after "---"
+    // that has a digit before " / " (a year only, "earliest date ...", or a mistyped date).
+    const locM = r.text != null ? (/\n[ \t\u00a0]*((?:\d{2}\.\d{2}\.\d{2}|[Uu]nknown date)[^\n/]*)\/\s*([^\n]+)/.exec(r.text)
+      || /\n---\n[ \t\u00a0]*((?:[^\n/]|\/[^ \n])*\d(?:[^\n/]|\/[^ \n])*) \/\s*([^\n]+)/.exec(r.text)) : null;
     const hr0 = hrM ? +hrM[1] : null;
     const p = {
       ...r, tags: r.tags || [], d0,
       d: d0 && d0 <= today ? d0 : null,
       hr: hr0 != null && hr0 >= 0 && hr0 <= 23 ? hr0 : null,
       hm: hmM ? hmM[1].replace('.', '') : null,
-      loc: r.text != null ? (locM ? locM[1].trim() : null) : (r.loc || null),
+      loc: r.text != null ? (locM ? locM[2].trim() : null) : (r.loc || null),
+      locHead: r.text != null ? (locM ? locM[1].trim() : null) : (r.loc_head || null),
     };
     p.country = country(p);
     return p;
@@ -340,6 +344,8 @@ function computeDatasets(rows, C, now = new Date()) {
   out.unfinished = tagged('not-finished');
   out.poets = tagged('referencing-poets');
   out.second = tagged('second-pass');
+  out.yearonly = poems.filter(p => /^(19|20)\d{2}($|[^.\d])/.test(p.locHead || '')).sort((a, b) => a.locHead.localeCompare(b.locHead) || byTitle(a, b)).map(p => ({
+    id: p.id, title: p.title, written: p.locHead, location: p.loc ?? (p.country !== 'Unknown' ? p.country : null), filed_in: filed(p) }));
   out.untagged = poems.filter(p => p.tags.length && p.tags.every(t => /^\d{4}$/.test(t))).sort(byDateThenTitle).map(p => ({
     id: p.id, title: p.title, written: iso(p.d), location: p.loc ?? (p.country !== 'Unknown' ? p.country : null), filed_in: filed(p) }));
 
@@ -376,7 +382,7 @@ function computeDatasets(rows, C, now = new Date()) {
 <script>
 const CONSTS = {"TW": "Da-an|Jhong|Danshuei|Singfuliao|Xinyi Road|ShiDa|OH CHA CHA|NEXT DOOR|Yaboo|Neighbor.s Cafe|Taipei|Taiwan|Chiayi|Chaiyi|Yongkang|Jinhua|Qingtian|Taoyuan|Taichung|Kaohsiung|Tainan", "VN": "Mekong|Saigon|Bao Loc|Ba Ria|Phu My|Danang|Da Nang|Da Lat|Dalat|SGN|Vietnam|Tỉnh|Hanoi|Vung Tau|Hoi An|Nha Trang", "TH": "Bangkok|BKK|Mae Rim|Krabi|Chiang|Lamphun|Pak Chong|Chom ?Thong|Thailand|Beekeeper|Sukhothai|Lampang|Ao Nang|Samut", "CN": "China|Beijing|Shanghai|Guangzhou|Shenzhen|Shantou|Xiamen", "NL": "Netherlands|Rotterdam|Amsterdam", "DE": "Germany|Berlin", "US": "1007 Ct|Roots|sbux|Starbucks|Queen Anne|Colleyville|Hurst|Bedford|Euless|Grapevine|Keller|Southlake|Dallas|Fort Worth|Arlington|Denton|Waco|Austin|San Antonio|San Diego|Jasper|Texas|, TX|, AR|Arkansas|Florida|Spokane|Tucson|Del Rio|Whole Foods|Somerset|Rampart|Chic-fil-A|Torchy|Greenville|Estate Coffee|Brew.s|Race Street|Trinity|Babylon|Chapp|Scooter|Hampton Inn|Marriott|NRH|CMS|CNC|Amherst|Chisholm|Precinct|Sandy Lake|Smithfield|Mid-Cities|Glade|Broadway|Not Just Pho|Boba Tea|Tandoor|Pho One|Pho Bac|Ahoyama|Executive|Buon Giorno|Flavors Indian|Sweet Magik|Bird Rock|Dichotomy|Trio|SMS|Sierra Springs|Hidden Oaks|Brown Trail|Botanical|Rosa.s|fire station|Colorado|Denver|Michigan|Detroit|Louisiana|Washington state|, USA|Spur 406", "fam": {"Mood": "frustration sadness mania desperation depression anxiety calm loneliness anger isolation", "Love & body": "infatuation lust longing biology blood", "Existence": "purpose death suicide memory dream violence", "World": "nature animal ideology religion political environmental-critique", "Imagery": "visuals aural smell wind sun fire-burn rain"}, "TOP16": ["frustration", "purpose", "violence", "mania", "memory", "sadness", "nature", "death", "suicide", "isolation", "depression", "calm", "infatuation", "anxiety", "lust", "dream"], "PLACE": [["Vietnam", "Vietnam", "Vietnam"], ["Saigon", "Saigon", "Vietnam"], ["Phu-My", "Phu My", "Vietnam"], ["Bao-Loc", "Bao Loc", "Vietnam"], ["Ba-Ria", "Ba Ria", "Vietnam"], ["Danang", "Danang", "Vietnam"], ["Taiwan", "Taiwan", "Taiwan"], ["Taipei", "Taipei", "Taiwan"], ["Chiayi", "Chiayi", "Taiwan"], ["China", "China", "China"], ["Hong-Kong", "Hong Kong", "China"], ["Thailand", "Thailand", "Thailand"], ["Bangkok", "Bangkok", "Thailand"], ["Pak-Chong", "Pak Chong", "Thailand"], ["Mae-Rim", "Mae Rim", "Thailand"], ["Krabi", "Krabi", "Thailand"], ["Lamphun", "Lamphun", "Thailand"], ["Chiang-Mai", "Chiang Mai", "Thailand"], ["Chiang-Rai", "Chiang Rai", "Thailand"], ["San-Antonio", "San Antonio", "USA"], ["San-Diego", "San Diego", "USA"], ["Colleyville", "Colleyville", "USA"], ["Florida", "Florida", "USA"], ["Austin", "Austin", "USA"], ["Waco", "Waco", "USA"], ["Texas", "Texas", "USA"], ["Spokane", "Spokane", "USA"], ["Washington", "Washington", "USA"], ["Del-Rio", "Del Rio", "USA"], ["Netherlands", "Netherlands", "Netherlands"], ["Rotterdam", "Rotterdam", "Netherlands"], ["Germany", "Germany", "Germany"], ["Berlin", "Berlin", "Germany"]]};
 const sb = window.supabase.createClient('https://jblxjixgkfsejzvmbxgb.supabase.co', 'sb_publishable_x2U2s3sp-bvpIM-xG1TTtA_TJv9eNDg', { auth: { persistSession: true, autoRefreshToken: true } });
-const COLS = 'id,title,source_file,tags,words,lines,notebook,collection,upnote_updated_at,last_edited,loc,loc_when';
+const COLS = 'id,title,source_file,tags,words,lines,notebook,collection,upnote_updated_at,last_edited,loc,loc_when,loc_head';
 const $id = (i) => document.getElementById(i);
 let loadedOnce = false;
 

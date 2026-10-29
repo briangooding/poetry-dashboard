@@ -415,6 +415,25 @@ html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); fon
       </div>
     </div>
   </section>
+
+  <section class="pz-sec" id="appendix-yearonly">
+    <h2>Appendix I: poems dated by year only<span id="yro-total"></span></h2>
+    <div class="pz-card" id="card-yearonly">
+      <p class="note" style="margin-top:0">Every poem whose location line gives only a year (for example "2005 / Texas") instead of a full date. Add the full date in UpNote where you know it.</p>
+      <div class="pz-tools"><input type="search" id="yro-q" placeholder="Search titles, dates, places or notebooks" aria-label="Search poems dated by year only"><span class="cnt" id="yro-cnt"></span></div>
+      <div class="pz-tablebox">
+        <table class="pz-table" id="tbl-yearonly" data-source="yearonly" data-row-key="id">
+          <thead><tr>
+            <th data-field="title"><button type="button" data-k="title">Title</button></th>
+            <th data-field="written"><button type="button" data-k="written">Year</button></th>
+            <th data-field="location" class="hide-narrow"><button type="button" data-k="location">Location</button></th>
+            <th data-field="filed_in" class="hide-narrow hide-mid"><button type="button" data-k="filed_in">Collection or notebook</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
   <div class="pz-modal" id="poem-modal" hidden>
     <div class="pz-modal-box" role="dialog" data-source="poem" aria-modal="true" aria-labelledby="pm-title">
       <button type="button" class="pz-modal-close" id="pm-close" aria-label="Close">×</button>
@@ -508,14 +527,18 @@ function computeDatasets(rows, C, now = new Date()) {
     const d0 = fromFile || parseDate(sf);
     const hrM = /\d{2}\.\d{2}\.\d{2}[\s.]+(\d{2})\.?\d{2}/.exec(sf);
     const hmM = /\d{2}\.\d{2}\.\d{2}[\s.]+(\d{2}\.?\d{2})/.exec(sf);
-    const locM = r.text != null ? /\n[ \t\u00a0]*\d{2}\.\d{2}\.\d{2}[^\n/]*\/\s*([^\n]+)/.exec(r.text) : null;
+    // Location line: "<date or 'unknown date'> / place"; failing that, the first line after "---"
+    // that has a digit before " / " (a year only, "earliest date ...", or a mistyped date).
+    const locM = r.text != null ? (/\n[ \t\u00a0]*((?:\d{2}\.\d{2}\.\d{2}|[Uu]nknown date)[^\n/]*)\/\s*([^\n]+)/.exec(r.text)
+      || /\n---\n[ \t\u00a0]*((?:[^\n/]|\/[^ \n])*\d(?:[^\n/]|\/[^ \n])*) \/\s*([^\n]+)/.exec(r.text)) : null;
     const hr0 = hrM ? +hrM[1] : null;
     const p = {
       ...r, tags: r.tags || [], d0,
       d: d0 && d0 <= today ? d0 : null,
       hr: hr0 != null && hr0 >= 0 && hr0 <= 23 ? hr0 : null,
       hm: hmM ? hmM[1].replace('.', '') : null,
-      loc: r.text != null ? (locM ? locM[1].trim() : null) : (r.loc || null),
+      loc: r.text != null ? (locM ? locM[2].trim() : null) : (r.loc || null),
+      locHead: r.text != null ? (locM ? locM[1].trim() : null) : (r.loc_head || null),
     };
     p.country = country(p);
     return p;
@@ -579,6 +602,8 @@ function computeDatasets(rows, C, now = new Date()) {
   out.unfinished = tagged('not-finished');
   out.poets = tagged('referencing-poets');
   out.second = tagged('second-pass');
+  out.yearonly = poems.filter(p => /^(19|20)\d{2}($|[^.\d])/.test(p.locHead || '')).sort((a, b) => a.locHead.localeCompare(b.locHead) || byTitle(a, b)).map(p => ({
+    id: p.id, title: p.title, written: p.locHead, location: p.loc ?? (p.country !== 'Unknown' ? p.country : null), filed_in: filed(p) }));
   out.untagged = poems.filter(p => p.tags.length && p.tags.every(t => /^\d{4}$/.test(t))).sort(byDateThenTitle).map(p => ({
     id: p.id, title: p.title, written: iso(p.d), location: p.loc ?? (p.country !== 'Unknown' ? p.country : null), filed_in: filed(p) }));
 
@@ -622,7 +647,7 @@ const fromSupabase = ({ answer }) => {
   if (!m) throw new Error(text.slice(0, 300));
   return JSON.parse(m[1]);
 };
-['summary', 'by_year', 'month_weekday', 'hours', 'themes', 'theme_eras', 'countries', 'place_tags', 'country_years', 'unlocated', 'latest', 'revisit', 'brief', 'collection', 'unfinished', 'updated', 'poets', 'second', 'untagged', 'poem'].forEach(id =>
+['summary', 'by_year', 'month_weekday', 'hours', 'themes', 'theme_eras', 'countries', 'place_tags', 'country_years', 'unlocated', 'latest', 'revisit', 'brief', 'collection', 'unfinished', 'updated', 'poets', 'second', 'untagged', 'yearonly', 'poem'].forEach(id =>
   dash.loader(id, { description: 'Reads the JSON rows out of Supabase’s execute_sql answer.', fn: fromSupabase }));
 
 dash.calc('unlocated_counts', {
@@ -933,6 +958,8 @@ dash.calc('highlights', {
     cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
   const draw_untagged = makeTable({ source: 'untagged', table: 'tbl-untagged', q: 'unt-q', cnt: 'unt-cnt', total: 'unt-total', empty: 'No poems have only a year tag. Year tags reach this page after the next sync from UpNote.',
     cols: [['title', 'Untitled'], ['written', 'No date'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
+  const draw_yearonly = makeTable({ source: 'yearonly', table: 'tbl-yearonly', q: 'yro-q', cnt: 'yro-cnt', total: 'yro-total', empty: 'Every dated location line has a full date.',
+    cols: [['title', 'Untitled'], ['written', '—'], ['location', 'Unknown', 'hide-narrow'], ['filed_in', '—', 'muted hide-narrow hide-mid']] });
 
   function drawPoemCard(pre) {
     const box = $(pre);
@@ -995,7 +1022,7 @@ dash.calc('highlights', {
   }
   // Full text loads only when a title is clicked.
   function findRow(id) {
-    for (const src of ['latest', 'updated', 'poem_texts', 'unlocated', 'revisit', 'brief', 'collection', 'unfinished', 'poets', 'second', 'untagged']) {
+    for (const src of ['latest', 'updated', 'poem_texts', 'unlocated', 'revisit', 'brief', 'collection', 'unfinished', 'poets', 'second', 'untagged', 'yearonly']) {
       const s = dash.data(src);
       if (s.status === 'ok' && Array.isArray(s.data)) { const r = s.data.find(x => String(x.id) === String(id)); if (r) return r; }
     }
@@ -1098,6 +1125,7 @@ dash.calc('highlights', {
     draw_poets();
     draw_second();
     draw_untagged();
+    draw_yearonly();
     if ((r = state($('ch-theme-eras'), 'theme_eras'))) grid($('ch-theme-eras'), r, 'theme', d => d.share, { color: dash.colors[0], label: d => d3.format('.0%')(d.share), tipVal: d => `${d3.format('.1%')(d.share)} of poems (${fmt(d.poems)} of ${fmt(d.total)})`, onPick: PICK && PICK(d => `Poems tagged “${d.theme}”, ${d.era}`, (p, d) => p.era === d.era && p.tags.includes(d.theme)) });
     if ((r = state($('ch-themes'), 'themes'))) {
       legend($('lg-themes'), FAMILIES, famColor);
@@ -1110,7 +1138,7 @@ dash.calc('highlights', {
 <script>
 const CONSTS = {"TW": "Da-an|Jhong|Danshuei|Singfuliao|Xinyi Road|ShiDa|OH CHA CHA|NEXT DOOR|Yaboo|Neighbor.s Cafe|Taipei|Taiwan|Chiayi|Chaiyi|Yongkang|Jinhua|Qingtian|Taoyuan|Taichung|Kaohsiung|Tainan", "VN": "Mekong|Saigon|Bao Loc|Ba Ria|Phu My|Danang|Da Nang|Da Lat|Dalat|SGN|Vietnam|Tỉnh|Hanoi|Vung Tau|Hoi An|Nha Trang", "TH": "Bangkok|BKK|Mae Rim|Krabi|Chiang|Lamphun|Pak Chong|Chom ?Thong|Thailand|Beekeeper|Sukhothai|Lampang|Ao Nang|Samut", "CN": "China|Beijing|Shanghai|Guangzhou|Shenzhen|Shantou|Xiamen", "NL": "Netherlands|Rotterdam|Amsterdam", "DE": "Germany|Berlin", "US": "1007 Ct|Roots|sbux|Starbucks|Queen Anne|Colleyville|Hurst|Bedford|Euless|Grapevine|Keller|Southlake|Dallas|Fort Worth|Arlington|Denton|Waco|Austin|San Antonio|San Diego|Jasper|Texas|, TX|, AR|Arkansas|Florida|Spokane|Tucson|Del Rio|Whole Foods|Somerset|Rampart|Chic-fil-A|Torchy|Greenville|Estate Coffee|Brew.s|Race Street|Trinity|Babylon|Chapp|Scooter|Hampton Inn|Marriott|NRH|CMS|CNC|Amherst|Chisholm|Precinct|Sandy Lake|Smithfield|Mid-Cities|Glade|Broadway|Not Just Pho|Boba Tea|Tandoor|Pho One|Pho Bac|Ahoyama|Executive|Buon Giorno|Flavors Indian|Sweet Magik|Bird Rock|Dichotomy|Trio|SMS|Sierra Springs|Hidden Oaks|Brown Trail|Botanical|Rosa.s|fire station|Colorado|Denver|Michigan|Detroit|Louisiana|Washington state|, USA|Spur 406", "fam": {"Mood": "frustration sadness mania desperation depression anxiety calm loneliness anger isolation", "Love & body": "infatuation lust longing biology blood", "Existence": "purpose death suicide memory dream violence", "World": "nature animal ideology religion political environmental-critique", "Imagery": "visuals aural smell wind sun fire-burn rain"}, "TOP16": ["frustration", "purpose", "violence", "mania", "memory", "sadness", "nature", "death", "suicide", "isolation", "depression", "calm", "infatuation", "anxiety", "lust", "dream"], "PLACE": [["Vietnam", "Vietnam", "Vietnam"], ["Saigon", "Saigon", "Vietnam"], ["Phu-My", "Phu My", "Vietnam"], ["Bao-Loc", "Bao Loc", "Vietnam"], ["Ba-Ria", "Ba Ria", "Vietnam"], ["Danang", "Danang", "Vietnam"], ["Taiwan", "Taiwan", "Taiwan"], ["Taipei", "Taipei", "Taiwan"], ["Chiayi", "Chiayi", "Taiwan"], ["China", "China", "China"], ["Hong-Kong", "Hong Kong", "China"], ["Thailand", "Thailand", "Thailand"], ["Bangkok", "Bangkok", "Thailand"], ["Pak-Chong", "Pak Chong", "Thailand"], ["Mae-Rim", "Mae Rim", "Thailand"], ["Krabi", "Krabi", "Thailand"], ["Lamphun", "Lamphun", "Thailand"], ["Chiang-Mai", "Chiang Mai", "Thailand"], ["Chiang-Rai", "Chiang Rai", "Thailand"], ["San-Antonio", "San Antonio", "USA"], ["San-Diego", "San Diego", "USA"], ["Colleyville", "Colleyville", "USA"], ["Florida", "Florida", "USA"], ["Austin", "Austin", "USA"], ["Waco", "Waco", "USA"], ["Texas", "Texas", "USA"], ["Spokane", "Spokane", "USA"], ["Washington", "Washington", "USA"], ["Del-Rio", "Del Rio", "USA"], ["Netherlands", "Netherlands", "Netherlands"], ["Rotterdam", "Rotterdam", "Netherlands"], ["Germany", "Germany", "Germany"], ["Berlin", "Berlin", "Germany"]]};
 const sb = window.supabase.createClient('https://jblxjixgkfsejzvmbxgb.supabase.co', 'sb_publishable_x2U2s3sp-bvpIM-xG1TTtA_TJv9eNDg', { auth: { persistSession: true, autoRefreshToken: true } });
-const COLS = 'id,title,source_file,tags,words,lines,notebook,collection,upnote_updated_at,last_edited,loc,loc_when';
+const COLS = 'id,title,source_file,tags,words,lines,notebook,collection,upnote_updated_at,last_edited,loc,loc_when,loc_head';
 const $id = (i) => document.getElementById(i);
 let loadedOnce = false;
 
