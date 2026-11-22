@@ -100,6 +100,25 @@ html,body{margin:0}
 #auth .linkbtn{all:unset;cursor:pointer;font-size:13px;color:var(--ink-3);text-decoration:underline;text-underline-offset:3px}
 #auth .linkbtn:hover,#auth .linkbtn:focus-visible{color:var(--ink)}
 .btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+/* Poem reader */
+.ptitle{border:0;background:none;color:var(--ink);padding:0;text-align:left;font:inherit;text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:3px}
+.ptitle:hover{text-decoration-color:var(--a);color:var(--a)}
+dialog#reader{width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 48px);padding:0;border:1px solid var(--rule);border-radius:12px;background:var(--surface);color:var(--ink)}
+dialog#reader::backdrop{background:rgba(0,0,0,.55)}
+.rd-head{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--rule);padding:14px 18px 10px;display:flex;gap:10px;align-items:start}
+.rd-head h2{font-family:var(--display);font-weight:400;font-size:22px;line-height:1.2;margin:0;flex:1;text-wrap:balance}
+.rd-nav{display:flex;gap:6px;flex-shrink:0}
+.rd-nav .btn{padding:3px 9px}
+.rd-meta{color:var(--ink-3);font-size:12.5px;font-family:var(--mono);margin:4px 0 0}
+.rd-body{font-family:var(--display);font-size:16px;line-height:1.6;white-space:pre-wrap;margin:0;padding:16px 18px;overflow-wrap:anywhere}
+.rd-body del{color:var(--ink-3)}
+.rd-body .md-h{font-weight:600}
+.rd-body .md-q{color:var(--ink-2);border-left:2px solid var(--rule);padding-left:.6em}
+.rd-body a{color:inherit;text-underline-offset:3px}
+.rd-foot{border-top:1px solid var(--rule);padding:10px 18px 14px;display:flex;flex-direction:column;gap:8px}
+.rd-foot .chips button.chip{cursor:pointer}
+.rd-foot .chips button.chip:hover{border-color:var(--a);color:var(--ink)}
+.rd-foot .chips button.chip.on{border-color:var(--a);color:var(--a)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
@@ -145,6 +164,18 @@ html,body{margin:0}
   <main class="wrap" id="main">
     <section class="notice"><h2>Reading your poems</h2><p class="muted">Fetching every poem's tags, dates, length and draft marks.</p></section>
   </main>
+  <dialog id="reader" aria-labelledby="rd-title">
+    <div class="rd-head">
+      <div style="flex:1;min-width:0"><h2 id="rd-title"></h2><p class="rd-meta" id="rd-meta"></p></div>
+      <div class="rd-nav">
+        <button class="btn" type="button" id="rd-prev" title="Previous poem in the list (←)" aria-label="Previous poem">←</button>
+        <button class="btn" type="button" id="rd-next" title="Next poem in the list (→)" aria-label="Next poem">→</button>
+        <button class="btn" type="button" id="rd-close" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="rd-body" id="rd-body"></div>
+    <div class="rd-foot"><span class="lab">Tags · click one to explore it</span><div class="chips" id="rd-tags"></div></div>
+  </dialog>
 </div>
 <script>
 const PROJECT = "jblxjixgkfsejzvmbxgb";
@@ -399,6 +430,7 @@ function poemList(A,B){
   const k=S.sortK, d=S.sortD;
   set = [...set].sort((a,b)=>{ const x=a[k], y=b[k]; if(x==null&&y==null)return 0; if(x==null)return 1; if(y==null)return -1; return (typeof x==="string"? x.localeCompare(y) : x-y)*d; });
   const shown = S.showAll ? set : set.slice(0,150);
+  S.listIds = set.map(r=>r.id);
   const modes = B ? [["A",S.A],["B",S.B],["both","Both"],["Aonly",S.A+" only"],["Bonly",S.B+" only"]] : [];
   const th = (key,label,n) => `<th class="${n?"n":""}"><button type="button" data-sort="${key}">${label}${S.sortK===key?(S.sortD>0?" ↑":" ↓"):""}</button></th>`;
   const skip = new Set([S.A,S.B]);
@@ -407,7 +439,7 @@ function poemList(A,B){
     <div class="field"><label for="q">Filter by title, tag or collection</label><input id="q" value="${esc(S.q)}" placeholder="e.g. San-Antonio"></div>
     <span class="muted" style="padding-bottom:6px">${set.length} poems</span></div>
   <div class="scroll"><table><thead><tr>${th("t","Title")}${th("y","Year",1)}${th("w","Words",1)}${th("l","Lines",1)}${th("c","Collection")}<th>Other tags</th></tr></thead><tbody>
-  ${shown.map(r=>`<tr><td>${esc(r.t)}</td><td class="n">${r.y??"—"}</td><td class="n">${r.w}</td><td class="n">${r.l}</td><td>${esc(r.c||"")}</td><td><div class="chips">${r.tags.filter(t=>!skip.has(t)&&!isYearTag(t)).slice(0,8).map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div></td></tr>`).join("")}
+  ${shown.map(r=>`<tr><td><button class="ptitle" type="button" data-poem="${r.id}">${esc(r.t)}</button></td><td class="n">${r.y??"—"}</td><td class="n">${r.w}</td><td class="n">${r.l}</td><td>${esc(r.c||"")}</td><td><div class="chips">${r.tags.filter(t=>!skip.has(t)&&!isYearTag(t)).slice(0,8).map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div></td></tr>`).join("")}
   </tbody></table></div>
   ${set.length>shown.length?`<button class="btn more" type="button" id="showAll">Show all ${set.length}</button>`:""}`;
 }
@@ -428,7 +460,85 @@ function wireList(){
   document.querySelectorAll("[data-lm]").forEach(b=>b.onclick=()=>{S.listMode=b.dataset.lm;S.showAll=false;rerenderList()});
   const q=$("q"); if(q) q.oninput=()=>{S.q=q.value; const pos=q.selectionStart; rerenderList(); const n=$("q"); n.focus(); try{n.setSelectionRange(pos,pos)}catch(e){}};
   const sa=$("showAll"); if(sa) sa.onclick=()=>{S.showAll=true;rerenderList()};
+  document.querySelectorAll("[data-poem]").forEach(b=>b.onclick=()=>openPoem(+b.dataset.poem));
 }
+
+/* ---------- poem reader ---------- */
+const textCache = new Map();
+let curPoem = null;
+async function fetchText(id){
+  if (!textCache.has(id)){
+    const { data, error } = await sb.from("poems").select("id,text").eq("id", id).single();
+    if (error) throw error;
+    textCache.set(id, data.text || "");
+  }
+  return textCache.get(id);
+}
+function splitPoem(t){
+  const body = String(t||"").replace(/\r/g,"");
+  const m = /\n-{3,}[ \t]*\n/g; let cut=-1, end=-1, x;
+  while ((x = m.exec(body))) { cut = x.index; end = x.index + x[0].length; }
+  if (cut < 0) return { body: body.trim(), foot: "" };
+  return { body: body.slice(0,cut).trim(), foot: body.slice(end).trim() };
+}
+function mdPoem(text){
+  const inline = t => {
+    const keep=[]; const stash = h => `\u0000${keep.push(h)-1}\u0000`;
+    t = t.replace(/\[([^\]\n]*)\]\(([^)\s]+)\)/g,(m,label,url)=>{ const shown=label.trim()||url;
+      return /^https?:\/\//i.test(url) ? stash(`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(shown)}</a>`) : stash(esc(shown)); });
+    t = esc(t);
+    t = t.replace(/\*\*([^*\n]+?)\*\*/g,"<b>$1</b>").replace(/~~([^~\n]+?)~~/g,"<del>$1</del>")
+         .replace(/(^|[^\w])_([^_\n]+?)_(?=[^\w]|$)/g,"$1<i>$2</i>").replace(/(^|[^*\w])\*([^*\s][^*\n]*?)\*(?=[^*\w]|$)/g,"$1<i>$2</i>");
+    return t.replace(/\u0000(\d+)\u0000/g,(m,i)=>keep[+i]);
+  };
+  return String(text||"").split("\n").map(line=>{ let m;
+    if ((m=/^\s{0,3}#{1,6}\s+(.*)$/.exec(line))) return `<span class="md-h">${inline(m[1])}</span>`;
+    if ((m=/^\s{0,3}>\s?(.*)$/.exec(line))) return `<span class="md-q">${inline(m[1])}</span>`;
+    return inline(line);
+  }).join("\n");
+}
+function fillReader(r, foot){
+  $("rd-title").textContent = r.t;
+  $("rd-meta").textContent = [foot || (r.y ?? "Undated"), `${fn(r.w)} words`, `${r.l} lines`, r.c].filter(Boolean).join(" · ");
+  const tags = r.tags.filter(t=>!isYearTag(t));
+  $("rd-tags").innerHTML = tags.length ? tags.map(t=>`<button type="button" class="chip${t===S.A||t===S.B?" on":""}" data-rtag="${esc(t)}">${esc(t)}</button>`).join("") : `<span class="muted">No tags</span>`;
+  $("rd-tags").querySelectorAll("[data-rtag]").forEach(b=>b.onclick=()=>{ $("reader").close(); setA(b.dataset.rtag); });
+  const i = (S.listIds||[]).indexOf(r.id), n = (S.listIds||[]).length;
+  $("rd-prev").disabled = i <= 0; $("rd-next").disabled = i < 0 || i >= n-1;
+}
+async function openPoem(id){
+  const r = S.rows.find(x=>x.id===id); if (!r) return;
+  curPoem = id;
+  const dlg = $("reader");
+  fillReader(r, "");
+  $("rd-body").textContent = "Loading…"; $("rd-body").classList.add("muted");
+  if (!dlg.open) dlg.showModal();
+  dlg.scrollTop = 0;
+  try{
+    const t = await fetchText(id);
+    if (curPoem !== id) return;
+    const { body, foot } = splitPoem(t);
+    fillReader(r, foot.split("\n")[0] || "");
+    $("rd-body").classList.remove("muted");
+    $("rd-body").innerHTML = mdPoem(body) || `<span class="muted">(empty)</span>`;
+  }catch(e){
+    console.error(e);
+    if (curPoem === id){ $("rd-body").textContent = "Could not load this poem: " + (e.message || e); }
+  }
+}
+function stepPoem(d){
+  const ids = S.listIds||[], i = ids.indexOf(curPoem);
+  if (i >= 0 && ids[i+d] != null) openPoem(ids[i+d]);
+}
+$("rd-prev").onclick = () => stepPoem(-1);
+$("rd-next").onclick = () => stepPoem(1);
+$("rd-close").onclick = () => $("reader").close();
+$("reader").addEventListener("click", e => { if (e.target === $("reader")) $("reader").close(); });
+$("reader").addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") { e.preventDefault(); stepPoem(-1); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); stepPoem(1); }
+});
+$("reader").addEventListener("close", () => { curPoem = null; });
 function rerenderList(){
   const all=base(), A=all.filter(r=>has(r,S.A)), B=S.B?all.filter(r=>has(r,S.B)):null;
   $("poems").innerHTML = `<h2>The poems</h2>${poemList(A,B)}`; save(); wireList();
